@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+}
+.text-white {
+    color: #fff;
+}
+
+.bg-dark {
+    background-color: #161D30 !important;
+}
+
+.bg-secondary {
+    background-color: #292F45 !important;
+}
+
+
+.card {
+    margin-top: 50px;
+    height: 200px;
+}
+
+.statistics {
+    display: flex;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+}
+
+.statistic {
+    margin-right: 10%;
+}
+
+.card-body {
+    position: relative;
+}
+
+.dropdown-style {
+    background-color: #7466F1;
+    box-shadow: 0 0 10px #7466F1;
+    border: none;
+    width: 130px;
+    height: 35px;
+}
+
+.form-group select {
+    width: 130px;
+    height: 35px;
+    border-radius: 0.375rem;
+    color: white;
+    background-color: #7466F1;
+    box-shadow: 0 0 10px #7466F1;
+    border: none;
+}
+
+.btn-start {
+    margin-top: 20px;
+    color: white;
+    background-color: #7466F1;
+    box-shadow: 0 0 10px #7466F1;
+    width: 130px;
+    height: 35px;
+    transition: 0.3s;
+}
+
+.btn-start:hover {
+    color: white;
+    background-color: #7466F1 !important;
+    box-shadow: 0 0 10px #7466F1;
+}
+
+.font-roboto {
+    font-family: 'Roboto', sans-serif;
+}
