@@ -2,67 +2,280 @@
 <html>
 
 <head>
-    <title>Home Page</title>
+    <title>LED Matrix Control Panel</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-        crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"
         integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh"
         crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"
         integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ"
         crossorigin="anonymous"></script>
-    <script src="{{ url_for('static',filename='js/app.js') }}"></script>
-
-
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/styles.css') }}">
+        <link href="./static/css/styles.css" rel="stylesheet">
 </head>
 
-<body class="bg-dark">
-    <div class="hero text-white">
-        <div class="container-lg">
-            <div class="row">
-                <div class="col-sm-4">
-                    <div class="control-panel card bg-secondary">
-                        <div class="card-body">
-                            <p class="card-title" style="font-size: 17px; font-weight: 400; letter-spacing: 1px;">
-                                Control Panel</p>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">LED Matrix Control Panel</a>
+        </div>
+    </nav>
 
-                            <form name="dropdown-form" class="form-inline" method="post" action="/on">
-                                <div class="form-group">
-                                    <div class="input-group">
-                                            <select name="comp_select" class="selectpicker form-control">
-                                            {% for o in data %}
-                                            <option value="{{ o.name }}">{{ o.name }}</option>
-                                            {% endfor %}
-                                            </select>
-                                    </div>
+    <div class="container-lg">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="info-icon">🎛️</i>Control Panel
+                            <span class="status-indicator {{ 'status-on' if matrix.toggled else 'status-off' }}"></span>
+                            <span class="mode-badge" id="current-mode">{{ matrix.mode.__class__.__name__ if matrix.mode else 'Off' }}</span>
+                        </h5>
+
+                        <form name="dropdown-form" class="form-inline" method="post" action="/on" id="mode-form">
+                            <div class="form-group">
+                                <div class="input-group">
+                                    <select name="comp_select" class="selectpicker form-control" id="mode-select">
+                                        {% for o in data %}
+                                        <option value="{{ o.name }}">{{ o.name }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
-                            </form>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <button type="submit" class="btn btn-start" name="start-action">Start</button>
+                                <button type="button" class="btn btn-stop" name="stop-action" id="stop-button">Stop</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
-                            <button class="btn btn-start" name="start-action" onclick="submit()">Start</button>
-                            <button class="btn btn-start" name="stop-action" onclick="fetchStop()">Stop</button>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="info-icon">📊</i>System Information
+                        </h5>
+                        <div class="system-info">
+                            <p><strong>Model:</strong> <span id="model-info">{{ model }}</span></p>
+                            <p><strong>Storage:</strong> <span id="storage-info">{{ storage }}</span></p>
+                            <p><strong>Uptime:</strong> <span id="uptime-info">{{ uptime }}</span></p>
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4">
-                    <div class="card bg-secondary">
-                        <div class="card-body">
-                            <h5 class="card-title" style="font-size: 17px; font-weight: 400; letter-spacing: 1px;">System Information</h5>
+            </div>
 
-                            <p>Model: {{ model }}</p>
-                            <p>Storage: {{ storage }}</p>
-                            <p>Uptime: {{ uptime }}</p>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="info-icon">🎨</i>Drawing Canvas
+                        </h5>
+                        <div class="canvas-container">
+                            <canvas id="drawing-canvas" width="192" height="64"></canvas>
+                            
+                            <div class="color-picker">
+                                <div class="color-swatch active" style="background-color: #ff0000;" data-color="#ff0000"></div>
+                                <div class="color-swatch" style="background-color: #00ff00;" data-color="#00ff00"></div>
+                                <div class="color-swatch" style="background-color: #0000ff;" data-color="#0000ff"></div>
+                                <div class="color-swatch" style="background-color: #ffff00;" data-color="#ffff00"></div>
+                                <div class="color-swatch" style="background-color: #ff00ff;" data-color="#ff00ff"></div>
+                                <div class="color-swatch" style="background-color: #00ffff;" data-color="#00ffff"></div>
+                                <div class="color-swatch" style="background-color: #ffffff;" data-color="#ffffff"></div>
+                                <div class="color-swatch" style="background-color: #000000;" data-color="#000000"></div>
+                            </div>
+                            
+                            <div class="canvas-controls">
+                                <label for="brush-size">Brush Size:</label>
+                                <input type="range" min="1" max="10" value="3" class="brush-size" id="brush-size">
+                                <span id="brush-size-value">3px</span>
+                                <button class="btn btn-start" id="clear-canvas">Clear</button>
+                                <button class="btn btn-start" id="send-to-matrix">Send to Matrix</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+<script>
+    $(document).ready(function() {
+        const canvas = document.getElementById('drawing-canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let currentColor = '#ff0000';
+        let brushSize = 3;
+        
+        // Initialize canvas
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        function showNotification(title, message, type) {
+    // Simple implementation - you can replace with a more sophisticated notification system
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const notification = $(`<div class="alert ${alertClass}" role="alert">
+        <strong>${title}:</strong> ${message}
+        <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>`);
+    
+    // Add to page
+    $('body').append(notification);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(function() {
+        notification.alert('close');
+    }, 3000);
+}
+
+        // Drawing functions
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+        
+        function stopDrawing() {
+            isDrawing = false;
+            ctx.beginPath();
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            ctx.lineWidth = brushSize;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = currentColor;
+            
+            // Get position accounting for canvas position and scaling
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            if (clientX && clientY) {
+                const x = (clientX - rect.left) * scaleX;
+                const y = (clientY - rect.top) * scaleY;
+                
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            }
+        }
+        
+        // Event listeners for drawing
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        // Touch support
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            startDrawing(e);
+        });
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            draw(e);
+        });
+        canvas.addEventListener('touchend', stopDrawing);
+        
+        // Color picker
+        $('.color-swatch').click(function() {
+            $('.color-swatch').removeClass('active');
+            $(this).addClass('active');
+            currentColor = $(this).data('color');
+        });
+        
+        // Brush size
+        $('#brush-size').on('input', function() {
+            brushSize = $(this).val();
+            $('#brush-size-value').text(brushSize + 'px');
+        });
+        
+        // Clear canvas
+        $('#clear-canvas').click(function() {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        });
+        
+// Send to matrix
+$('#send-to-matrix').click(function() {
+    const button = $(this);
+    const originalText = button.text();
+    button.prop('disabled', true).text('Sending...');
+    
+    try {
+        const imageData = canvas.toDataURL('image/png');
+        
+        $.ajax({
+            url: '/send-drawing',
+            type: 'POST',
+            data: {
+                image_data: imageData
+            },
+            success: function(response) {
+                showNotification('Success', 'Drawing sent to matrix!', 'success');
+                button.text(originalText).prop('disabled', false); // This line should reset the button
+            },
+            error: function(xhr, status, error) {
+                console.error("Error sending drawing:", error);
+                console.error("Response:", xhr.responseText);
+                
+                let errorMessage = 'Error sending drawing to matrix.';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response && response.message) {
+                        errorMessage = response.message;
+                    }
+                } catch(e) {}
+                
+                showNotification('Error', errorMessage, 'error');
+                button.text(originalText).prop('disabled', false);
+            }
+        });
+    } catch(e) {
+        console.error("Exception in send-to-matrix:", e);
+        showNotification('Error', 'Could not process drawing image: ' + e.message, 'error');
+        button.text(originalText).prop('disabled', false);
+    }
+});
+        // Stop button
+        $('#stop-button').click(function() {
+            const button = $(this);
+            button.prop('disabled', true);
+            
+            $.ajax({
+                url: '/off',
+                type: 'POST',
+                success: function(response) {
+                    $('.status-indicator').removeClass('status-on').addClass('status-off');
+                    $('#current-mode').text('Off');
+                    showNotification('Success', 'LED matrix turned off', 'success');
+                    button.prop('disabled', false);
+                },
+                error: function() {
+                    showNotification('Error', 'Failed to turn off LED matrix', 'error');
+                    button.prop('disabled', false);
+                }
+            });
+        });
+            // Auto-refresh system info
+            setInterval(function() {
+                $.ajax({
+                    url: '/system-info',
+                    type: 'GET',
+                    success: function(response) {
+                        $('#storage-info').text(response.storage);
+                        $('#uptime-info').text(response.uptime);
+                    }
+                });
+            }, 30000); // Every 30 seconds
+        });
+    </script>
 </body>
 
 </html>

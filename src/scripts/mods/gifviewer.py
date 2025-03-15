@@ -12,7 +12,7 @@ class Gif(SampleBase):
 
     def run(self):
         super(Gif, self).run()
-        gif = self.get_img("mods/images/ronald.png")
+        gif = self.get_img("mods/images/giphy.gif")
 
         while self.running:
             for frame in gif:
@@ -21,19 +21,20 @@ class Gif(SampleBase):
 
     def get_img(self, path):
         img = Image.open(path)
-        img.resize((192, 64))
-
+        
         seq = []
-
+        
         try:
             while True:
-                t = img.copy()
-                seq.append(t.convert('RGB'))
-                img.seek(len(seq))
+                t = img.copy().convert('RGB')
+                t = t.resize((192, 64))  # Resize each frame individually
+                seq.append(t)
+                img.seek(len(seq))  # Move to the next frame
         except EOFError:
             pass
 
         return seq
+
 
         
 
