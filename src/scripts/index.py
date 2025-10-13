@@ -151,7 +151,7 @@ def snake_control():
 def flappybird_jump():
     try:
         if matrix.mode and isinstance(matrix.mode, FlappyBird):
-            print("Jumped")
+            matrix.mode.bird.flap()
             return make_response(jsonify({"message": "Jumped successfully"}))
         else:
             return make_response(jsonify({"message": "Flappy Bird game is not running"}), 400)

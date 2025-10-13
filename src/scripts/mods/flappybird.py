@@ -4,6 +4,7 @@ from PIL import Image, ImageDraw
 import time
 class FlappyBird(SampleBase):
     def __init__(self, matrix):
+        print("FlappyBird instance created")
         threading.Thread.__init__(self)
         self.matrix = matrix
         self.lock = threading.Lock()
@@ -16,7 +17,10 @@ class FlappyBird(SampleBase):
         
         self.game_over = False
         self.score = 0
+
         self.gravity = 20
+        self.velocity = 0
+        self.jump_strength = 15
 
         self.birdX = 10
         self.birdY = 2
@@ -25,16 +29,19 @@ class FlappyBird(SampleBase):
         
         self.direction_lock = threading.Lock()
 
+        self.bird = Bird(self.draw, self.GRID_SIZE, self.jump_strength)
+
         self.last_update_time = time.time()
 
     def run(self):
-        self.bird = Bird(self.draw, self.GRID_SIZE)
 
         while self.running:
             if not self.game_over:
                 current_time = time.time()
                 dt = current_time - self.last_update_time
-                self.bird.y += self.gravity * dt
+                self.bird.velocity += self.gravity * dt
+                self.bird.y += self.bird.velocity * dt
+
                 self.last_update_time = current_time
 
             self.draw.rectangle((0, 0, self.WIDTH, self.HEIGHT), fill="black")
@@ -44,15 +51,21 @@ class FlappyBird(SampleBase):
             self.matrix.SetImage(self.image)
 
 class Bird():
-    def __init__(self, draw, GRID_SIZE):
+    def __init__(self, draw, GRID_SIZE, jump_strength):
         self.x = 10
         self.y = 2
         self.draw = draw
         self.GRID_SIZE = GRID_SIZE
+        self.jump_strength = jump_strength
+        self.velocity = 0
 
     def draw_bird(self):
         y = int(self.y)
-        self.draw.rectangle((self.x, self.y, self.x + self.GRID_SIZE, y + self.GRID_SIZE), fill="yellow")
+        self.draw.rectangle((self.x, y, self.x + self.GRID_SIZE, y + self.GRID_SIZE), fill="yellow")
+
+    def flap(self):
+        print("Jump")
+        self.velocity = -self.jump_strength
 
 
 

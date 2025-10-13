@@ -1,7 +1,6 @@
 $(document).ready(function () {
 
     function handleJump() {
-        console.log("Sending Request")
         $.ajax({
             url: '/flappybird-jump',
             type: 'POST',
