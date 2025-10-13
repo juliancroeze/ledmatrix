@@ -11,8 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"
         integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh"
         crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"
-        integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ"
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js" 
+        integrity="sha384-u1OknCvxWvY5kfmNBILK2hRnQC3Pr17a+RTT6rIHI7NnikvbZlHgTPOOmMi466C8" 
         crossorigin="anonymous"></script>
         <link href="./static/css/styles.css" rel="stylesheet">
 </head>
@@ -100,181 +100,367 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="snakeControlsModal" tabindex="-1" aria-labelledby="snakeControlsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+              <h5 class="modal-title" id="snakeControlsModalLabel">Snake Game Controls</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="text-center mb-3">
+                <div class="score-display">
+                  Score: <span id="snake-score">0</span>
+                </div>
+                <div id="game-over-alert" class="alert alert-danger mt-2 d-none">
+                  Game Over! Press Reset to play again.
+                </div>
+              </div>
+              
+              <div class="direction-pad">
+                <button class="btn btn-secondary direction-btn" id="btn-up" data-direction="UP">↑</button>
+                <button class="btn btn-secondary direction-btn" id="btn-left" data-direction="LEFT">←</button>
+                <button class="btn btn-secondary direction-btn" id="btn-right" data-direction="RIGHT">→</button>
+                <button class="btn btn-secondary direction-btn" id="btn-down" data-direction="DOWN">↓</button>
+              </div>
+              
+              <div class="text-center mt-4">
+                <button class="btn btn-primary" id="reset-game">Reset Game</button>
+              </div>
+              
+              <div class="keyboard-hint text-center mt-3">
+                <small>You can also use keyboard arrow keys to control the snake</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 <script>
-    $(document).ready(function() {
-        const canvas = document.getElementById('drawing-canvas');
-        const ctx = canvas.getContext('2d');
-        let isDrawing = false;
-        let currentColor = '#ff0000';
-        let brushSize = 3;
-        
-        // Initialize canvas
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        function showNotification(title, message, type) {
-    // Simple implementation - you can replace with a more sophisticated notification system
-    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-    const notification = $(`<div class="alert ${alertClass}" role="alert">
-        <strong>${title}:</strong> ${message}
-        <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>`);
+$(document).ready(function() {
+    // Canvas variables and initialization
+    const canvas = document.getElementById('drawing-canvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let currentColor = '#ff0000';
+    let brushSize = 3;
+    let snakeStatusInterval;
     
-    // Add to page
-    $('body').append(notification);
+    // Initialize canvas
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Auto-remove after 3 seconds
-    setTimeout(function() {
-        notification.alert('close');
-    }, 3000);
-}
+    // Notification function
+    function showNotification(title, message, type) {
+        // Simple implementation - you can replace with a more sophisticated notification system
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const notification = $(`<div class="alert ${alertClass}" role="alert">
+            <strong>${title}:</strong> ${message}
+            <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>`);
+        
+        // Add to page
+        $('body').append(notification);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(function() {
+            notification.alert('close');
+        }, 3000);
+    }
 
-        // Drawing functions
-        function startDrawing(e) {
-            isDrawing = true;
-            draw(e);
-        }
-        
-        function stopDrawing() {
-            isDrawing = false;
-            ctx.beginPath();
-        }
-        
-        function draw(e) {
-            if (!isDrawing) return;
-            
-            ctx.lineWidth = brushSize;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = currentColor;
-            
-            // Get position accounting for canvas position and scaling
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            
-            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            
-            if (clientX && clientY) {
-                const x = (clientX - rect.left) * scaleX;
-                const y = (clientY - rect.top) * scaleY;
-                
-                ctx.lineTo(x, y);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-            }
-        }
-        
-        // Event listeners for drawing
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
-        
-        // Touch support
-        canvas.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            startDrawing(e);
-        });
-        canvas.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-            draw(e);
-        });
-        canvas.addEventListener('touchend', stopDrawing);
-        
-        // Color picker
-        $('.color-swatch').click(function() {
-            $('.color-swatch').removeClass('active');
-            $(this).addClass('active');
-            currentColor = $(this).data('color');
-        });
-        
-        // Brush size
-        $('#brush-size').on('input', function() {
-            brushSize = $(this).val();
-            $('#brush-size-value').text(brushSize + 'px');
-        });
-        
-        // Clear canvas
-        $('#clear-canvas').click(function() {
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        });
-        
-// Send to matrix
-$('#send-to-matrix').click(function() {
-    const button = $(this);
-    const originalText = button.text();
-    button.prop('disabled', true).text('Sending...');
+    // Drawing functions
+    function startDrawing(e) {
+        isDrawing = true;
+        draw(e);
+    }
     
-    try {
-        const imageData = canvas.toDataURL('image/png');
+    function stopDrawing() {
+        isDrawing = false;
+        ctx.beginPath();
+    }
+    
+    function draw(e) {
+        if (!isDrawing) return;
         
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = currentColor;
+        
+        // Get position accounting for canvas position and scaling
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        
+        if (clientX && clientY) {
+            const x = (clientX - rect.left) * scaleX;
+            const y = (clientY - rect.top) * scaleY;
+            
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+    }
+    
+    // Snake game functions
+    function sendSnakeDirection(direction) {
         $.ajax({
-            url: '/send-drawing',
+            url: '/snake-control',
             type: 'POST',
             data: {
-                image_data: imageData
-            },
-            success: function(response) {
-                showNotification('Success', 'Drawing sent to matrix!', 'success');
-                button.text(originalText).prop('disabled', false); // This line should reset the button
+                direction: direction
             },
             error: function(xhr, status, error) {
-                console.error("Error sending drawing:", error);
-                console.error("Response:", xhr.responseText);
-                
-                let errorMessage = 'Error sending drawing to matrix.';
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response && response.message) {
-                        errorMessage = response.message;
-                    }
-                } catch(e) {}
-                
-                showNotification('Error', errorMessage, 'error');
-                button.text(originalText).prop('disabled', false);
+                console.error("Error sending direction:", error);
             }
         });
-    } catch(e) {
-        console.error("Exception in send-to-matrix:", e);
-        showNotification('Error', 'Could not process drawing image: ' + e.message, 'error');
-        button.text(originalText).prop('disabled', false);
     }
-});
-        // Stop button
-        $('#stop-button').click(function() {
-            const button = $(this);
-            button.prop('disabled', true);
-            
+    
+    function startSnakeStatusUpdates() {
+        // Clear any existing interval
+        if (snakeStatusInterval) {
+            clearInterval(snakeStatusInterval);
+        }
+        
+        // Update game status every 500ms
+        snakeStatusInterval = setInterval(function() {
             $.ajax({
-                url: '/off',
-                type: 'POST',
+                url: '/snake-status',
+                type: 'GET',
                 success: function(response) {
-                    $('.status-indicator').removeClass('status-on').addClass('status-off');
-                    $('#current-mode').text('Off');
-                    showNotification('Success', 'LED matrix turned off', 'success');
-                    button.prop('disabled', false);
+                    $('#snake-score').text(response.score);
+                    
+                    if (response.game_over) {
+                        $('#game-over-alert').removeClass('d-none');
+                    } else {
+                        $('#game-over-alert').addClass('d-none');
+                    }
                 },
-                error: function() {
-                    showNotification('Error', 'Failed to turn off LED matrix', 'error');
-                    button.prop('disabled', false);
+                error: function(xhr, status, error) {
+                    console.error("Error getting snake status:", error);
+                    // If we get errors multiple times, maybe the game has stopped
+                    if (xhr.status === 400) {
+                        clearInterval(snakeStatusInterval);
+                    }
                 }
             });
+        }, 500);
+    }
+    
+    // EVENT LISTENERS
+    
+    // Drawing event listeners
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    
+    // Touch support
+    canvas.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        startDrawing(e);
+    });
+    canvas.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+        draw(e);
+    });
+    canvas.addEventListener('touchend', stopDrawing);
+    
+    // Color picker
+    $('.color-swatch').click(function() {
+        $('.color-swatch').removeClass('active');
+        $(this).addClass('active');
+        currentColor = $(this).data('color');
+    });
+    
+    // Brush size
+    $('#brush-size').on('input', function() {
+        brushSize = $(this).val();
+        $('#brush-size-value').text(brushSize + 'px');
+    });
+    
+    // Clear canvas
+    $('#clear-canvas').click(function() {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    });
+    
+    // Send to matrix
+    $('#send-to-matrix').click(function() {
+        const button = $(this);
+        const originalText = button.text();
+        button.prop('disabled', true).text('Sending...');
+        
+        try {
+            const imageData = canvas.toDataURL('image/png');
+            
+            $.ajax({
+                url: '/send-drawing',
+                type: 'POST',
+                data: {
+                    image_data: imageData
+                },
+                success: function(response) {
+                    showNotification('Success', 'Drawing sent to matrix!', 'success');
+                    button.text(originalText).prop('disabled', false);
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error sending drawing:", error);
+                    console.error("Response:", xhr.responseText);
+                    
+                    let errorMessage = 'Error sending drawing to matrix.';
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response && response.message) {
+                            errorMessage = response.message;
+                        }
+                    } catch(e) {}
+                    
+                    showNotification('Error', errorMessage, 'error');
+                    button.text(originalText).prop('disabled', false);
+                }
+            });
+        } catch(e) {
+            console.error("Exception in send-to-matrix:", e);
+            showNotification('Error', 'Could not process drawing image: ' + e.message, 'error');
+            button.text(originalText).prop('disabled', false);
+        }
+    });
+    
+    // Stop button
+    $('#stop-button').click(function() {
+        const button = $(this);
+        button.prop('disabled', true);
+        
+        $.ajax({
+            url: '/off',
+            type: 'POST',
+            success: function(response) {
+                $('.status-indicator').removeClass('status-on').addClass('status-off');
+                $('#current-mode').text('Off');
+                showNotification('Success', 'LED matrix turned off', 'success');
+                button.prop('disabled', false);
+            },
+            error: function() {
+                showNotification('Error', 'Failed to turn off LED matrix', 'error');
+                button.prop('disabled', false);
+            }
         });
-            // Auto-refresh system info
-            setInterval(function() {
-                $.ajax({
-                    url: '/system-info',
-                    type: 'GET',
-                    success: function(response) {
-                        $('#storage-info').text(response.storage);
-                        $('#uptime-info').text(response.uptime);
-                    }
-                });
-            }, 30000); // Every 30 seconds
+    });
+    
+    // Auto-refresh system info
+    setInterval(function() {
+        $.ajax({
+            url: '/system-info',
+            type: 'GET',
+            success: function(response) {
+                $('#storage-info').text(response.storage);
+                $('#uptime-info').text(response.uptime);
+            }
         });
+    }, 30000); // Every 30 seconds
+    
+    // Snake game mode
+    $('#mode-form').submit(function(e) {
+    e.preventDefault(); // Prevent default form submission
+    
+    const selectedMode = $('#mode-select').val();
+    
+    // Send AJAX request to start the selected mode
+    $.ajax({
+        url: '/on',
+        type: 'POST',
+        data: {
+            comp_select: selectedMode
+        },
+        success: function(response) {
+            // Update UI to show the mode is active
+            $('.status-indicator').removeClass('status-off').addClass('status-on');
+            $('#current-mode').text(selectedMode);
+            
+            // If snake mode, show the modal
+            if (selectedMode === 'snake') {
+                setTimeout(function() {
+                    const snakeModal = new bootstrap.Modal(document.getElementById('snakeControlsModal'));
+                    snakeModal.show();
+                    startSnakeStatusUpdates();
+                }, 500);
+            }
+            
+            showNotification('Success', 'Mode started successfully', 'success');
+        },
+        error: function(xhr, status, error) {
+            showNotification('Error', 'Failed to start mode', 'error');
+        }
+    });
+});
+    
+    // Handle direction buttons
+    $('.direction-btn').click(function() {
+        const direction = $(this).data('direction');
+        sendSnakeDirection(direction);
+    });
+    
+    // Handle keyboard controls for snake
+    $(document).keydown(function(e) {
+        // Only process if the snake modal is shown
+        if (document.getElementById('snakeControlsModal').classList.contains('show')) {
+            let direction = null;
+            
+            switch(e.which) {
+                case 37: // left arrow
+                    direction = 'LEFT';
+                    break;
+                case 38: // up arrow
+                    direction = 'UP';
+                    break;
+                case 39: // right arrow
+                    direction = 'RIGHT';
+                    break;
+                case 40: // down arrow
+                    direction = 'DOWN';
+                    break;
+                default: return; // exit this handler for other keys
+            }
+            
+            if (direction) {
+                e.preventDefault(); // prevent default action (scroll / etc)
+                sendSnakeDirection(direction);
+            }
+        }
+    });
+    
+    // Reset game button
+    $('#reset-game').click(function() {
+        $.ajax({
+            url: '/snake-reset',
+            type: 'POST',
+            success: function(response) {
+                $('#game-over-alert').addClass('d-none');
+            },
+            error: function(xhr, status, error) {
+                showNotification('Error', 'Failed to reset game', 'error');
+            }
+        });
+    });
+    
+    // Clean up when the snake modal is closed
+    $('#snakeControlsModal').on('hidden.bs.modal', function () {
+        if (snakeStatusInterval) {
+            clearInterval(snakeStatusInterval);
+        }
+    });
+    
+    // Add snake option to the dropdown if it doesn't exist
+    if ($("#mode-select option[value='snake']").length === 0) {
+        $('#mode-select').append($('<option>', {
+            value: 'snake',
+            text: 'snake'
+        }));
+    }
+});
     </script>
 </body>
 

@@ -10,7 +10,8 @@ from mods.gifviewer import Gif
 from mods.dvd import Dvd
 from mods.test import PulsingColors
 from mods.drawing import Drawing  # Import our new Drawing mode
-from mods.ufc import UFCEvent
+from mods.snake import Snake
+from mods.weather import WeatherApp
 from flask import Flask, render_template, request, make_response, jsonify, redirect, url_for
 import website.site
 import shlex, subprocess
@@ -52,12 +53,12 @@ app = Flask(__name__)
 def index():
     test()
     return render_template(
-    'index.html',
-    data=[{'name':'dvd'}, {'name':'gif'}, {'name':'clock'}, {'name':'test'}],
-    model=detect_model(),
-    storage=getStorage(),
-    uptime=getUptime(),
-    matrix=matrix)
+        'index.html',
+        data=[{'name':'dvd'}, {'name':'gif'}, {'name':'clock'}, {'name':'test'}, {'name':'snake'}, {'name': 'weather'}],
+        model=detect_model(),
+        storage=getStorage(),
+        uptime=getUptime(),
+        matrix=matrix)
     
 @app.route('/on', methods=['GET', 'POST'])
 def on():
@@ -72,6 +73,10 @@ def on():
         matrix.mode = Dvd(matrix.matrix)
     if selected == 'test':
         matrix.mode = PulsingColors(matrix.matrix)
+    if selected == 'snake':
+        matrix.mode = Snake(matrix.matrix)  # Add the Snake option
+    if selected == 'weather':
+        matrix.mode = WeatherApp(matrix.matrix)  # Add the Snake option
     matrix.run()
     return redirect('/')
 
@@ -83,6 +88,64 @@ def off():
     matrix.run()
     data = {'message': 'Done', 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
+
+@app.route('/snake', methods=['GET', 'POST'])
+def snake_game():
+    """Render the snake game page"""
+    test()
+    return render_template(
+        'snake.html',
+        model=detect_model(),
+        storage=getStorage(),
+        uptime=getUptime(),
+        matrix=matrix)
+
+@app.route('/start-snake', methods=['POST'])
+def start_snake():
+    """Start the snake game"""
+    matrix.toggled = True
+    matrix.mode = Snake(matrix.matrix)
+    matrix.run()
+    return make_response(jsonify({"message": "Snake game started"}), 200)
+
+@app.route('/snake-control', methods=['POST'])
+def snake_control():
+    """Handle snake direction changes"""
+    try:
+        direction = request.form.get('direction')
+        if direction in ['UP', 'DOWN', 'LEFT', 'RIGHT']:
+            if matrix.mode and isinstance(matrix.mode, Snake):
+                success = matrix.mode.change_direction(direction)
+                return make_response(jsonify({"message": f"Direction changed to {direction}", "success": success}), 200)
+            else:
+                return make_response(jsonify({"message": "Snake game is not running"}), 400)
+        else:
+            return make_response(jsonify({"message": "Invalid direction"}), 400)
+    except Exception as e:
+        return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
+
+@app.route('/snake-reset', methods=['POST'])
+def snake_reset():
+    """Reset the snake game"""
+    try:
+        if matrix.mode and isinstance(matrix.mode, Snake):
+            matrix.mode.reset_game()
+            return make_response(jsonify({"message": "Game reset successfully"}), 200)
+        else:
+            return make_response(jsonify({"message": "Snake game is not running"}), 400)
+    except Exception as e:
+        return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
+
+@app.route('/snake-status', methods=['GET'])
+def snake_status():
+    """Get the current status of the snake game"""
+    try:
+        if matrix.mode and isinstance(matrix.mode, Snake):
+            return make_response(jsonify(matrix.mode.get_game_state()), 200)
+        else:
+            return make_response(jsonify({"message": "Snake game is not running"}), 400)
+    except Exception as e:
+        return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
 
 @app.route('/send-drawing', methods=['POST'])
 def send_drawing():
