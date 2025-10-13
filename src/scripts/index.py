@@ -4,15 +4,16 @@ import os, platform, subprocess, re
 from datetime import date, datetime
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
-# Mods Imports
 from mods.clock import Clock
 from mods.gifviewer import Gif
 from mods.dvd import Dvd
 from mods.test import PulsingColors
-from mods.drawing import Drawing  # Import our new Drawing mode
+from mods.drawing import Drawing
 from mods.snake import Snake
 from mods.webcam import Webcam
 from mods.weather import WeatherApp
+from mods.bitcoin import BTCDisplay
+from mods.flappybird import FlappyBird
 from flask import Flask, render_template, request, make_response, jsonify, redirect, url_for
 import website.site
 import shlex, subprocess
@@ -55,7 +56,8 @@ def index():
     test()
     return render_template(
         'index.html',
-        data=[{'name':'dvd'}, {'name':'gif'}, {'name':'clock'}, {'name':'test'}, {'name':'snake'}, {'name': 'weather'}, {'name': 'webcam'}],
+        data=[{'name':'dvd'}, {'name':'gif'}, {'name':'clock'}, {'name':'test'}, {'name':'snake'}, {'name': 'weather'}, {'name': 'webcam'}, {'name': 'bitcoin'},
+        {"name": "flappybird"}],
         model=detect_model(),
         storage=getStorage(),
         uptime=getUptime(),
@@ -63,7 +65,6 @@ def index():
     
 @app.route('/on', methods=['GET', 'POST'])
 def on():
-    # Turn on led panel
     matrix.toggled = True
     selected = request.form.get('comp_select')
     if selected == 'clock':
@@ -75,11 +76,15 @@ def on():
     if selected == 'test':
         matrix.mode = PulsingColors(matrix.matrix)
     if selected == 'snake':
-        matrix.mode = Snake(matrix.matrix)  # Add the Snake option
+        matrix.mode = Snake(matrix.matrix)  
     if selected == 'weather':
-        matrix.mode = WeatherApp(matrix.matrix)  # Add the Snake option
+        matrix.mode = WeatherApp(matrix.matrix) 
     if selected == "webcam":
         matrix.mode = Webcam(matrix.matrix)
+    if selected == "bitcoin":
+        matrix.mode = BTCDisplay(matrix.matrix)
+    if selected == "flappybird":
+        matrix.mode = FlappyBird(matrix.matrix)
     matrix.run()
     return redirect('/')
 
@@ -98,7 +103,6 @@ def webcam_frame():
 
 @app.route('/off', methods=['GET', 'POST'])
 def off():
-    # Turn off led panel
     print("Turning off")
     matrix.toggled = False
     matrix.run()
@@ -204,19 +208,12 @@ def detect_model() -> str:
         return "Unknown Model"
 
 def test():
-    # Get cpu statistics
     cpu = str(psutil.cpu_percent()) + '%'
-
-    # Calculate memory information
     memory = psutil.virtual_memory()
-    # Convert Bytes to MB (Bytes -> KB -> MB)
     available = round(memory.available/1024.0/1024.0,1)
     total = round(memory.total/1024.0/1024.0,1)
     mem_info = str(available) + 'MB free / ' + str(total) + 'MB total ( ' + str(memory.percent) + '% )'
-
-    # Calculate disk information
     disk = psutil.disk_usage('/')
-    # Convert Bytes to GB (Bytes -> KB -> MB -> GB)
     free = round(disk.free/1024.0/1024.0/1024.0,1)
     total = round(disk.total/1024.0/1024.0/1024.0,1)
     disk_info = str(free) + 'GB free / ' + str(total) + 'GB total ( ' + str(disk.percent) + '% )'
