@@ -12,7 +12,7 @@ class Gif(SampleBase):
 
     def run(self):
         super(Gif, self).run()
-        gif = self.get_img("mods/images/giphy.gif")
+        gif = self.get_img("mods/images/image.jpeg")
 
         while self.running:
             for frame in gif:

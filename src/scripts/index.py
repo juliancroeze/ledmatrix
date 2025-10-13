@@ -92,20 +92,31 @@ def on():
     return redirect('/')
 
 
+@socketio.on('webcam-frame')
+def webcam_frame(data):
+    if matrix.mode and isinstance(matrix.mode, Webcam):
+        image_data = data.get('frame')
+        if image_data:
+            matrix.mode.update_frame(image_data)
 
+@socketio.on('flappybird_jump')
+def handle_flappybird_jump():
+    if matrix.mode and isinstance(matrix.mode, FlappyBird):
+        matrix.mode.bird.flap()
+        emit('jumped', {'message': 'Jumped!'})
 
-@app.route('/webcam-frame', methods=['POST'])
-def webcam_frame():
-    """Receive webcam frame from browser"""
-    if not matrix.toggled or not isinstance(matrix.mode, Webcam):
-        return jsonify({"error": "Webcam mode not active"}), 400
+# @app.route('/webcam-frame', methods=['POST'])
+# def webcam_frame():
+#     """Receive webcam frame from browser"""
+#     if not matrix.toggled or not isinstance(matrix.mode, Webcam):
+#         return jsonify({"error": "Webcam mode not active"}), 400
     
-    image_data = request.form.get('frame')
-    if not image_data:
-        return jsonify({"error": "No frame data"}), 400
+#     image_data = request.form.get('frame')
+#     if not image_data:
+#         return jsonify({"error": "No frame data"}), 400
     
-    matrix.mode.update_frame(image_data)
-    return jsonify({"success": True})
+#     matrix.mode.update_frame(image_data)
+#     return jsonify({"success": True})
 
 @app.route('/off', methods=['GET', 'POST'])
 def off():
@@ -149,27 +160,7 @@ def snake_control():
             return make_response(jsonify({"message": "Invalid direction"}), 400)
     except Exception as e:
         return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
-
-# @app.route('/flappybird-jump', methods=['POST'])
-# def flappybird_jump():
-#     try:
-#         if matrix.mode and isinstance(matrix.mode, FlappyBird):
-#             matrix.mode.bird.flap()
-#             return make_response(jsonify({"message": "Jumped successfully"}))
-#         else:
-#             return make_response(jsonify({"message": "Flappy Bird game is not running"}), 400)
-#     except Exception as e:
-#         return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
-
-@socketio.on('flappybird_jump')
-def handle_flappybird_jump():
-    if matrix.mode and isinstance(matrix.mode, FlappyBird):
-        matrix.mode.bird.flap()
-        emit('jumped', {'message': 'Jumped!'})
-
-
-    
-
+  
 
 @app.route('/snake-reset', methods=['POST'])
 def snake_reset():
