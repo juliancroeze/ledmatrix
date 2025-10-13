@@ -51,6 +51,13 @@ class FlappyBird(SampleBase):
 
                 for pipe in self.pipes:
                     pipe.update(self.pipe_speed, dt)
+                    if pipe.x + pipe.width <= 0:
+                        self.pipes.remove(pipe)
+
+
+
+                if self.pipes[-1].x < self.WIDTH - (self.WIDTH/2):
+                    self.pipes.append(self.create_pipe())
 
                 self.last_update_time = current_time
 

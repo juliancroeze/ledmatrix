@@ -15,6 +15,7 @@ from mods.weather import WeatherApp
 from mods.bitcoin import BTCDisplay
 from mods.flappybird import FlappyBird
 from flask import Flask, render_template, request, make_response, jsonify, redirect, url_for
+from flask_socketio import SocketIO, emit
 import website.site
 import shlex, subprocess
 import psutil
@@ -50,6 +51,8 @@ class Matrix():
                 self.matrix.Clear()
 
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")  # Allow cross-origin for testing
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -147,16 +150,24 @@ def snake_control():
     except Exception as e:
         return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
 
-@app.route('/flappybird-jump', methods=['POST'])
-def flappybird_jump():
-    try:
-        if matrix.mode and isinstance(matrix.mode, FlappyBird):
-            matrix.mode.bird.flap()
-            return make_response(jsonify({"message": "Jumped successfully"}))
-        else:
-            return make_response(jsonify({"message": "Flappy Bird game is not running"}), 400)
-    except Exception as e:
-        return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
+# @app.route('/flappybird-jump', methods=['POST'])
+# def flappybird_jump():
+#     try:
+#         if matrix.mode and isinstance(matrix.mode, FlappyBird):
+#             matrix.mode.bird.flap()
+#             return make_response(jsonify({"message": "Jumped successfully"}))
+#         else:
+#             return make_response(jsonify({"message": "Flappy Bird game is not running"}), 400)
+#     except Exception as e:
+#         return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
+
+@socketio.on('flappybird_jump')
+def handle_flappybird_jump():
+    if matrix.mode and isinstance(matrix.mode, FlappyBird):
+        matrix.mode.bird.flap()
+        emit('jumped', {'message': 'Jumped!'})
+
+
     
 
 
@@ -256,10 +267,9 @@ def getUptime() -> str:
 
 if __name__ == "__main__":
     matrix = Matrix()
-    start=datetime.now()
+    start = datetime.now()
     
-    # Use home directory for temporary files to avoid permission issues
     user_home = os.path.expanduser("~")
     print(f"Using home directory for file storage: {user_home}")
     
-    startWebsite()
+    socketio.run(app, host='192.168.1.217', port=8000, debug=False)

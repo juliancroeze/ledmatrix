@@ -1,21 +1,14 @@
 $(document).ready(function () {
 
-    function handleJump() {
-        $.ajax({
-            url: '/flappybird-jump',
-            type: 'POST',
-            error: function (xhr, status, error) {
-                console.error("Error sending direction:", error);
-            }
-        });
-    }
+    
+    var socket = io('http://192.168.1.217:8000');
 
     $(document).keydown(function (e) {
         console.log(e.which);
 
         switch (e.which) {
             case 32:
-                handleJump();
+                socket.emit('flappybird_jump')
                 break;
             default: return;
         }
