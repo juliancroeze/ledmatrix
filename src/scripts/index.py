@@ -11,6 +11,7 @@ from mods.dvd import Dvd
 from mods.test import PulsingColors
 from mods.drawing import Drawing  # Import our new Drawing mode
 from mods.snake import Snake
+from mods.webcam import Webcam
 from mods.weather import WeatherApp
 from flask import Flask, render_template, request, make_response, jsonify, redirect, url_for
 import website.site
@@ -54,7 +55,7 @@ def index():
     test()
     return render_template(
         'index.html',
-        data=[{'name':'dvd'}, {'name':'gif'}, {'name':'clock'}, {'name':'test'}, {'name':'snake'}, {'name': 'weather'}],
+        data=[{'name':'dvd'}, {'name':'gif'}, {'name':'clock'}, {'name':'test'}, {'name':'snake'}, {'name': 'weather'}, {'name': 'webcam'}],
         model=detect_model(),
         storage=getStorage(),
         uptime=getUptime(),
@@ -77,8 +78,23 @@ def on():
         matrix.mode = Snake(matrix.matrix)  # Add the Snake option
     if selected == 'weather':
         matrix.mode = WeatherApp(matrix.matrix)  # Add the Snake option
+    if selected == "webcam":
+        matrix.mode = Webcam(matrix.matrix)
     matrix.run()
     return redirect('/')
+
+@app.route('/webcam-frame', methods=['POST'])
+def webcam_frame():
+    """Receive webcam frame from browser"""
+    if not matrix.toggled or not isinstance(matrix.mode, Webcam):
+        return jsonify({"error": "Webcam mode not active"}), 400
+    
+    image_data = request.form.get('frame')
+    if not image_data:
+        return jsonify({"error": "No frame data"}), 400
+    
+    matrix.mode.update_frame(image_data)
+    return jsonify({"success": True})
 
 @app.route('/off', methods=['GET', 'POST'])
 def off():
@@ -151,17 +167,13 @@ def snake_status():
 def send_drawing():
     try:
         if request.method == 'POST':
-            # Get the image data from the request
             image_data = request.form.get('image_data')
             
-            # Check if we're in drawing mode
             if matrix.mode is None or not isinstance(matrix.mode, Drawing):
-                # Switch to drawing mode
                 matrix.toggled = True
                 matrix.mode = Drawing(matrix.matrix)
                 matrix.run()
             
-            # Update the drawing
             success = matrix.mode.update_from_data_url(image_data)
             
             if success:
