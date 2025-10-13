@@ -88,6 +88,9 @@ def on():
     matrix.run()
     return redirect('/')
 
+
+
+
 @app.route('/webcam-frame', methods=['POST'])
 def webcam_frame():
     """Receive webcam frame from browser"""
@@ -143,6 +146,19 @@ def snake_control():
             return make_response(jsonify({"message": "Invalid direction"}), 400)
     except Exception as e:
         return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
+
+@app.route('/flappybird-jump', methods=['POST'])
+def flappybird_jump():
+    try:
+        if matrix.mode and isinstance(matrix.mode, FlappyBird):
+            print("Jumped")
+            return make_response(jsonify({"message": "Jumped successfully"}))
+        else:
+            return make_response(jsonify({"message": "Flappy Bird game is not running"}), 400)
+    except Exception as e:
+        return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
+    
+
 
 @app.route('/snake-reset', methods=['POST'])
 def snake_reset():

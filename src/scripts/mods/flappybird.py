@@ -39,7 +39,7 @@ class FlappyBird(SampleBase):
 
             self.draw.rectangle((0, 0, self.WIDTH, self.HEIGHT), fill="black")
 
-            self.bird.draw()
+            self.bird.draw_bird()
 
             self.matrix.SetImage(self.image)
 
@@ -50,8 +50,9 @@ class Bird():
         self.draw = draw
         self.GRID_SIZE = GRID_SIZE
 
-    def draw(self):
-        self.draw.rectangle((self.x, self.y, self.x + self.GRID_SIZE, self.y + self.GRID_SIZE), fill="yellow")
+    def draw_bird(self):
+        y = int(self.y)
+        self.draw.rectangle((self.x, self.y, self.x + self.GRID_SIZE, y + self.GRID_SIZE), fill="yellow")
 
 
 

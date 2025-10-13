@@ -1,11 +1,17 @@
 $(document).ready(function () {
 
     function handleJump() {
-
+        console.log("Sending Request")
+        $.ajax({
+            url: '/flappybird-jump',
+            type: 'POST',
+            error: function (xhr, status, error) {
+                console.error("Error sending direction:", error);
+            }
+        });
     }
 
     $(document).keydown(function (e) {
-        let direction = null;
         console.log(e.which);
 
         switch (e.which) {
@@ -14,12 +20,6 @@ $(document).ready(function () {
                 break;
             default: return;
         }
-
-        if (direction) {
-            e.preventDefault();
-            sendSnakeDirection(direction);
-        }
-
     });
 
 })

@@ -1,6 +1,7 @@
 $(document).ready(function () {
 
     function sendSnakeDirection(direction) {
+        console.log("Sending Request")
         $.ajax({
             url: '/snake-control',
             type: 'POST',
