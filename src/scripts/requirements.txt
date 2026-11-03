@@ -1,0 +1,6 @@
+# Python packages for the dashboard (the rgbmatrix module is built from ../ via `make install-python`)
+flask>=2.0
+flask-socketio>=5.0
+pillow>=8.0
+psutil
+requests
