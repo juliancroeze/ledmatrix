@@ -1,0 +1,19 @@
+[Unit]
+Description=LED matrix dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=@REPO@/src/scripts
+ExecStart=/usr/bin/python3 index.py @ARGS@
+Restart=always
+RestartSec=3
+# The LED library needs root for the GPIO pins.
+User=root
+# Don't write root-owned __pycache__ folders into the git checkout.
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
