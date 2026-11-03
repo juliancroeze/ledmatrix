@@ -671,13 +671,13 @@
   paddle.addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'touch') movePaddle(e); });
 
   // Keyboard: works whenever a game is running (controller open or not)
-  const KEYMAP = { ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT', w: 'UP', s: 'DOWN', a: 'LEFT', d: 'RIGHT', z: 'A', Enter: 'A', x: 'B' };
+  const KEYMAP = { ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT', w: 'UP', s: 'DOWN', a: 'LEFT', d: 'RIGHT', z: 'A', Enter: 'A', x: 'B', Shift: 'B' };
   const held = new Set();
   function keyAction(e) {
     const info = MODES[state.mode];
     if (!info || info.group !== 'games' || !state.on) return null;
     if (e.target.closest && e.target.closest('input, textarea')) return null;
-    if (e.key === ' ') return (info.controls && info.controls.b) ? 'B' : 'A';
+    if (e.key === ' ') return (info.controls && info.controls.space) || ((info.controls && info.controls.b) ? 'B' : 'A');
     return KEYMAP[e.key] || KEYMAP[e.key.toLowerCase()] || null;
   }
   document.addEventListener('keydown', e => {

@@ -1,11 +1,11 @@
 /* Service worker: caches the dashboard shell so the app opens instantly and
    shows a friendly state when the Pi can't be reached. Live data (API,
    socket.io, uploads) always goes to the network. */
-const VERSION = 'ledmatrix-v2.0.3';
+const VERSION = 'ledmatrix-v2.0.4';
 const SHELL = [
   '/',
-  '/static/css/styles.css?v=2.0.3',
-  '/static/js/app.js?v=2.0.3',
+  '/static/css/styles.css?v=2.0.4',
+  '/static/js/app.js?v=2.0.4',
   '/static/vendor/socket.io.min.js',
   '/static/fonts/doto-latin-900-normal.woff2',
   '/static/fonts/doto-latin-700-normal.woff2',

@@ -59,7 +59,7 @@ One page, three parts:
 - **Brightness** slider and **Turn off**.
 - **Modes**, grouped:
   - *Send from this device*: Camera, Screen share, Draw (live while you draw), Text (scrolling message), Image (photos and animated GIFs)
-  - *Games*: Snake, Tetris, Pong (vs computer, or 2 players on two phones), Flappy
+  - *Games*: Snake, Tetris, Pong (vs computer, or 2 players on two phones), Flappy, Mario 1-1 (World 1-1 of New Super Mario Bros. for the DS, rebuilt at 4×4 LEDs per tile: Mega Mushroom, vine to the Red Coin ring, underground room, 3 Star Coins, goal pole)
   - *Ambient*: Clock, Weather (Open-Meteo, any city), Bitcoin (CoinGecko), Digital rain, Starfield, Game of Life, DVD
 
 On a phone, starting a game opens a full-screen controller (works sideways too). On a computer, use the keyboard: arrows/WASD, `Space`, `Z`/`Enter` = A, `X` = B.
