@@ -1,427 +1,253 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>LED Matrix Control Panel</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"
-        integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-u1OknCvxWvY5kfmNBILK2hRnQC3Pr17a+RTT6rIHI7NnikvbZlHgTPOOmMi466C8"
-        crossorigin="anonymous"></script>
-
-    <script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
-
-    <script src="../static/js/flappybird.js"></script>
-
-    <script src="../static/js/snake.js"></script>
-    <link href="./static/css/styles.css" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>LED Matrix</title>
+  <meta name="theme-color" content="#0f1117">
+  <meta name="description" content="Control the LED matrix from any device">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="{{ url_for('static', filename='icons/icon-192.png') }}" type="image/png">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LED Matrix">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/doto-latin-900-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v={{ version }}">
 </head>
-
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">LED Matrix Control Panel</a>
-        </div>
-    </nav>
+  {% include '_icons.svg' %}
 
-    <div class="container-lg">
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="info-icon">🎛️</i>Control Panel
-                            <span class="status-indicator {{ 'status-on' if matrix.toggled else 'status-off' }}"></span>
-                            <span class="mode-badge" id="current-mode">{{ matrix.mode.__class__.__name__ if matrix.mode
-                                else 'Off' }}</span>
-                        </h5>
+  <div class="app">
 
-                        <form name="dropdown-form" class="form-inline" method="post" action="/on" id="mode-form">
-                            <div class="form-group">
-                                <div class="input-group">
-                                    <select name="comp_select" class="selectpicker form-control" id="mode-select">
-                                        {% for o in data %}
-                                        <option value="{{ o.name }}">{{ o.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <button type="submit" class="btn btn-start" name="start-action">Start</button>
-                                <button type="button" class="btn btn-stop" name="stop-action"
-                                    id="stop-button">Stop</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="info-icon">📊</i>System Information
-                        </h5>
-                        <div class="system-info">
-                            <p><strong>Model:</strong> <span id="model-info">{{ model }}</span></p>
-                            <p><strong>Storage:</strong> <span id="storage-info">{{ storage }}</span></p>
-                            <p><strong>Uptime:</strong> <span id="uptime-info">{{ uptime }}</span></p>
-                        </div>
-                    </div>
-                </div>
+    <main class="layout">
+      <section class="stage" aria-label="Matrix">
+        <div class="now">
+          <div class="now-info">
+            <span class="status-dot" id="status-dot"></span>
+            <div>
+              <div class="now-label" id="now-label">Off</div>
+              <div class="now-sub" id="now-sub">Pick a mode to start</div>
             </div>
-
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="info-icon">🎨</i>Drawing Canvas
-                        </h5>
-                        <div class="canvas-container">
-                            <canvas id="drawing-canvas" width="192" height="64"></canvas>
-
-                            <div class="color-picker">
-                                <div class="color-swatch active" style="background-color: #ff0000;"
-                                    data-color="#ff0000"></div>
-                                <div class="color-swatch" style="background-color: #00ff00;" data-color="#00ff00"></div>
-                                <div class="color-swatch" style="background-color: #0000ff;" data-color="#0000ff"></div>
-                                <div class="color-swatch" style="background-color: #ffff00;" data-color="#ffff00"></div>
-                                <div class="color-swatch" style="background-color: #ff00ff;" data-color="#ff00ff"></div>
-                                <div class="color-swatch" style="background-color: #00ffff;" data-color="#00ffff"></div>
-                                <div class="color-swatch" style="background-color: #ffffff;" data-color="#ffffff"></div>
-                                <div class="color-swatch" style="background-color: #000000;" data-color="#000000"></div>
-                            </div>
-
-                            <div class="canvas-controls">
-                                <label for="brush-size">Brush Size:</label>
-                                <input type="range" min="1" max="10" value="3" class="brush-size" id="brush-size">
-                                <span id="brush-size-value">3px</span>
-                                <button class="btn btn-start" id="clear-canvas">Clear</button>
-                                <button class="btn btn-start" id="send-to-matrix">Send to Matrix</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+          </div>
+          <div class="now-controls">
+            <label class="brightness" title="Brightness">
+              <svg class="icon"><use href="#i-sun"/></svg>
+              <input type="range" id="brightness" min="5" max="100" value="{{ state.brightness }}" aria-label="Brightness">
+              <output id="brightness-value">{{ state.brightness }}%</output>
+            </label>
+            <button class="btn btn-danger" id="stop-btn" title="Turn the matrix off">
+              <svg class="icon"><use href="#i-power"/></svg><span>Turn off</span>
+            </button>
+          </div>
         </div>
+
+        <!-- Context panels: only the one matching the selected mode is shown -->
+        <div class="panels" id="panels">
+
+          <section class="panel" data-panel="webcam" hidden>
+            <header class="panel-head"><h2>Camera</h2><p>Streams your camera to the matrix.</p></header>
+            <div class="secure-note" data-needs-secure hidden></div>
+            <div class="stream-view">
+              <video id="webcam-video" playsinline muted autoplay></video>
+              <div class="stream-empty"><svg class="icon"><use href="#i-camera"/></svg>Camera is off</div>
+            </div>
+            <div class="row wrap">
+              <button class="btn btn-primary" data-stream-toggle="webcam"><svg class="icon"><use href="#i-play"/></svg><span>Start camera</span></button>
+              <button class="btn btn-ghost" id="webcam-flip" title="Switch between front and back camera"><svg class="icon"><use href="#i-switch-camera"/></svg><span>Switch camera</span></button>
+              <label class="check"><input type="checkbox" id="webcam-mirror" checked> Mirror</label>
+            </div>
+            <div class="field">
+              <span class="field-label">Framing</span>
+              <div class="segmented" data-fit-for="webcam">
+                <button data-value="cover" class="active">Fill</button><button data-value="contain">Fit</button><button data-value="stretch">Stretch</button>
+              </div>
+            </div>
+            <p class="stream-stats" data-stats="webcam"></p>
+          </section>
+
+          <section class="panel" data-panel="screen" hidden>
+            <header class="panel-head"><h2>Screen share</h2><p>Mirror a screen, window or tab onto the matrix. Works in desktop browsers.</p></header>
+            <div class="secure-note" data-needs-secure hidden></div>
+            <div class="secure-note" id="screen-unsupported" hidden>This browser can't share its screen. Open the dashboard in Chrome, Edge, Firefox or Safari on a computer.</div>
+            <div class="stream-view">
+              <video id="screen-video" playsinline muted autoplay></video>
+              <div class="stream-empty"><svg class="icon"><use href="#i-monitor"/></svg>Not sharing</div>
+            </div>
+            <div class="row wrap">
+              <button class="btn btn-primary" data-stream-toggle="screen"><svg class="icon"><use href="#i-play"/></svg><span>Share screen</span></button>
+            </div>
+            <div class="field">
+              <span class="field-label">Framing</span>
+              <div class="segmented" data-fit-for="screen">
+                <button data-value="cover">Fill</button><button data-value="contain" class="active">Fit</button><button data-value="stretch">Stretch</button>
+              </div>
+            </div>
+            <div class="field">
+              <span class="field-label">Smoothness</span>
+              <div class="segmented" id="screen-fps">
+                <button data-value="10">10 fps</button><button data-value="20" class="active">20 fps</button><button data-value="30">30 fps</button>
+              </div>
+            </div>
+            <p class="stream-stats" data-stats="screen"></p>
+          </section>
+
+          <section class="panel" data-panel="draw" hidden>
+            <header class="panel-head"><h2>Draw</h2><p>Every pixel here is one LED.</p></header>
+            <div class="draw-wrap">
+              <canvas id="draw-canvas" width="192" height="64"></canvas>
+            </div>
+            <div class="row wrap draw-tools">
+              <div class="swatches" id="swatches">
+                <button class="swatch active" style="--c:#ff3b3b" data-color="#ff3b3b" aria-label="Red"></button>
+                <button class="swatch" style="--c:#ff9f1a" data-color="#ff9f1a" aria-label="Orange"></button>
+                <button class="swatch" style="--c:#ffe14d" data-color="#ffe14d" aria-label="Yellow"></button>
+                <button class="swatch" style="--c:#3dff7a" data-color="#3dff7a" aria-label="Green"></button>
+                <button class="swatch" style="--c:#29d9ff" data-color="#29d9ff" aria-label="Cyan"></button>
+                <button class="swatch" style="--c:#4d6bff" data-color="#4d6bff" aria-label="Blue"></button>
+                <button class="swatch" style="--c:#c34dff" data-color="#c34dff" aria-label="Purple"></button>
+                <button class="swatch" style="--c:#ffffff" data-color="#ffffff" aria-label="White"></button>
+                <label class="swatch swatch-custom" aria-label="Custom colour"><input type="color" id="custom-color" value="#ff66cc"></label>
+              </div>
+            </div>
+            <div class="row wrap">
+              <div class="segmented" id="draw-tool">
+                <button data-value="brush" class="active"><svg class="icon"><use href="#i-paintbrush"/></svg>Brush</button>
+                <button data-value="eraser"><svg class="icon"><use href="#i-eraser"/></svg>Eraser</button>
+              </div>
+              <label class="range-inline">Size <input type="range" id="brush-size" min="1" max="8" value="2"><output id="brush-size-value">2</output></label>
+            </div>
+            <div class="row wrap">
+              <label class="check"><input type="checkbox" id="draw-live" checked> Update live while drawing</label>
+              <span class="spacer"></span>
+              <button class="btn btn-ghost" id="clear-canvas"><svg class="icon"><use href="#i-eraser"/></svg>Clear</button>
+              <button class="btn btn-primary" id="send-to-matrix"><svg class="icon"><use href="#i-send"/></svg>Send to matrix</button>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="text" hidden>
+            <header class="panel-head"><h2>Text</h2><p>Scroll a message across the matrix.</p></header>
+            <textarea id="text-input" rows="2" maxlength="500" placeholder="Type a message">{{ state.options.text if state.mode == 'text' else '' }}</textarea>
+            <div class="field">
+              <span class="field-label">Size</span>
+              <div class="segmented" id="text-size">
+                <button data-value="small">Small</button><button data-value="medium" class="active">Medium</button><button data-value="large">Large</button>
+              </div>
+            </div>
+            <div class="row wrap">
+              <label class="color-field"><input type="color" id="text-color" value="#ffd84d"> Colour</label>
+              <label class="check"><input type="checkbox" id="text-rainbow"> Rainbow</label>
+            </div>
+            <label class="range-field">
+              <span class="field-label">Speed <output id="text-speed-value">40</output></span>
+              <input type="range" id="text-speed" min="0" max="140" value="40">
+              <small>0 keeps short messages still</small>
+            </label>
+            <div class="row end">
+              <button class="btn btn-primary" id="text-send"><svg class="icon"><use href="#i-send"/></svg>Show on matrix</button>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="image" hidden>
+            <header class="panel-head"><h2>Image</h2><p>Show a photo, or play a GIF.</p></header>
+            <label class="dropzone" id="dropzone">
+              <input type="file" id="image-file" accept="image/*" hidden>
+              <img id="image-thumb" alt="" hidden>
+              <span class="dropzone-text" id="dropzone-text"><svg class="icon"><use href="#i-upload"/></svg>Choose an image or drop it here</span>
+            </label>
+            <div class="field">
+              <span class="field-label">Framing</span>
+              <div class="segmented" id="image-fit">
+                <button data-value="cover" class="active">Fill</button><button data-value="contain">Fit</button><button data-value="stretch">Stretch</button>
+              </div>
+            </div>
+            <div class="row end">
+              <button class="btn btn-primary" id="image-send"><svg class="icon"><use href="#i-send"/></svg>Show on matrix</button>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="weather" hidden>
+            <header class="panel-head"><h2>Weather</h2><p>Current conditions from Open-Meteo.</p></header>
+            <form class="row" id="weather-form">
+              <input type="text" id="weather-city" value="{{ state.weather_city }}" placeholder="City" aria-label="City" autocomplete="address-level2">
+              <button class="btn btn-primary" type="submit">Show weather</button>
+            </form>
+          </section>
+
+          <section class="panel" data-panel="gamepad" hidden>
+            <header class="panel-head"><h2 id="game-title">Game</h2><p id="game-hint"></p></header>
+            <div class="scoreline" id="game-score"></div>
+            <div class="row">
+              <button class="btn btn-primary" id="open-controller"><svg class="icon"><use href="#i-gamepad-2"/></svg>Open controller</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <aside class="library" aria-label="Modes">
+        {% for group, title in [('live', 'Send from this device'), ('games', 'Games'), ('ambient', 'Ambient')] %}
+        <section class="group">
+          <h2 class="group-title">{{ title }}</h2>
+          <div class="tiles">
+            {% for m in modes if m.group == group %}
+            <button class="tile" data-mode="{{ m.id }}" aria-pressed="false">
+              <svg class="icon"><use href="#i-{{ m.icon }}"/></svg>
+              <span>{{ m.label }}</span>
+            </button>
+            {% endfor %}
+          </div>
+        </section>
+        {% endfor %}
+
+        <section class="group system">
+          <h2 class="group-title">Raspberry Pi</h2>
+          <dl class="sys" id="sys">
+            <div><dt>Model</dt><dd data-sys="model">{{ system.model }}</dd></div>
+            <div><dt>Address</dt><dd data-sys="ip">{{ system.ip }}</dd></div>
+            <div><dt>Uptime</dt><dd data-sys="uptime">{{ system.uptime }}</dd></div>
+            <div><dt>Temperature</dt><dd data-sys="temp">{{ system.temp ~ ' °C' if system.temp is not none else '–' }}</dd></div>
+            <div class="meter"><dt>CPU</dt><dd><span class="bar"><i data-bar="cpu" style="width: {{ system.cpu }}%"></i></span><span data-sys="cpu">{{ system.cpu|round|int }}%</span></dd></div>
+            <div class="meter"><dt>Memory</dt><dd><span class="bar"><i data-bar="memory" style="width: {{ system.memory }}%"></i></span><span data-sys="memory">{{ system.memory|round|int }}%</span></dd></div>
+            <div class="meter"><dt>Storage</dt><dd><span class="bar"><i data-bar="disk" style="width: {{ system.disk }}%"></i></span><span data-sys="storage">{{ system.storage }}</span></dd></div>
+          </dl>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Full-screen game controller -->
+  <div class="pad" id="pad" hidden>
+    <div class="pad-top">
+      <button class="btn btn-ghost btn-icon" id="pad-close" aria-label="Close controller"><svg class="icon"><use href="#i-x"/></svg></button>
+      <div class="pad-title"><span id="pad-name">Game</span><span class="pad-score" id="pad-score"></span></div>
+      <div class="segmented segmented-sm" id="pad-player" hidden>
+        <button data-value="1" class="active">P1</button><button data-value="2">P2</button>
+      </div>
     </div>
-    <div class="modal fade" id="snakeControlsModal" tabindex="-1" aria-labelledby="snakeControlsModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-light">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="snakeControlsModalLabel">Snake Game Controls</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="text-center mb-3">
-                        <div class="score-display">
-                            Score: <span id="snake-score">0</span>
-                        </div>
-                        <div id="game-over-alert" class="alert alert-danger mt-2 d-none">
-                            Game Over! Press Reset to play again.
-                        </div>
-                    </div>
-
-                    <div class="direction-pad">
-                        <button class="btn btn-secondary direction-btn" id="btn-up" data-direction="UP">↑</button>
-                        <button class="btn btn-secondary direction-btn" id="btn-left" data-direction="LEFT">←</button>
-                        <button class="btn btn-secondary direction-btn" id="btn-right" data-direction="RIGHT">→</button>
-                        <button class="btn btn-secondary direction-btn" id="btn-down" data-direction="DOWN">↓</button>
-                    </div>
-
-                    <div class="text-center mt-4">
-                        <button class="btn btn-primary" id="reset-game">Reset Game</button>
-                    </div>
-
-                    <div class="keyboard-hint text-center mt-3">
-                        <small>You can also use keyboard arrow keys to control the snake</small>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="pad-screen"><canvas id="pad-preview" width="192" height="64"></canvas></div>
+    <div class="pad-controls" id="pad-controls">
+      <div class="dpad" id="dpad">
+        <button class="dpad-btn up" data-action="UP" aria-label="Up"><svg class="icon"><use href="#i-chevron-up"/></svg></button>
+        <button class="dpad-btn left" data-action="LEFT" aria-label="Left"><svg class="icon"><use href="#i-chevron-left"/></svg></button>
+        <button class="dpad-btn right" data-action="RIGHT" aria-label="Right"><svg class="icon"><use href="#i-chevron-right"/></svg></button>
+        <button class="dpad-btn down" data-action="DOWN" aria-label="Down"><svg class="icon"><use href="#i-chevron-down"/></svg></button>
+      </div>
+      <div class="paddle" id="paddle" hidden><div class="paddle-knob" id="paddle-knob"></div></div>
+      <div class="ab">
+        <button class="ab-btn b" data-action="B" id="btn-b"><span>B</span><small></small></button>
+        <button class="ab-btn a" data-action="A" id="btn-a"><span>A</span><small></small></button>
+      </div>
     </div>
+    <p class="pad-hint" id="pad-hint"></p>
+  </div>
 
-    <div class="modal fade" id="webcamModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-light">
-                <div class="modal-header">
-                    <h5 class="modal-title">Webcam Stream</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <video id="webcam-preview" width="320" height="240" autoplay
-                        style="border: 2px solid #666; border-radius: 8px;"></video>
-                    <p class="mt-3" id="webcam-status">Starting camera...</p>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
 
-    <script>
-        $(document).ready(function () {
-            var socket = io('http://192.168.1.217:8000');
-
-            function startWebcamStream() {
-                webcamCanvas = document.createElement('canvas');
-                webcamCanvas.width = 192;
-                webcamCanvas.height = 64;
-                webcamContext = webcamCanvas.getContext('2d');
-
-                const video = document.getElementById('webcam-preview');
-
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function (stream) {
-                        webcamStream = stream;
-                        video.srcObject = stream;
-                        $('#webcam-status').text('Streaming to LED matrix...').addClass('text-success');
-
-                        // Send frames to server
-                        webcamInterval = setInterval(function () {
-                            // Draw video frame to canvas
-                            webcamContext.drawImage(video, 0, 0, 192, 64);
-
-                            // Convert to base64
-                            const frameData = webcamCanvas.toDataURL('image/jpeg', 0.8);
-
-                            // Send to server
-                            // $.post('/webcam-frame', { frame: frameData });
-                            socket.emit("webcam-frame", {frame: frameData})
-                        }, 50);
-                    })
-                    .catch(function (err) {
-                        $('#webcam-status').text('Camera access denied: ' + err.message).addClass('text-danger');
-                    });
-            }
-
-            function stopWebcamStream() {
-                if (webcamInterval) {
-                    clearInterval(webcamInterval);
-                }
-                if (webcamStream) {
-                    webcamStream.getTracks().forEach(track => track.stop());
-                }
-            }
-
-            $('#webcamModal').on('hidden.bs.modal', function () {
-                stopWebcamStream();
-            });
-
-            const canvas = document.getElementById('drawing-canvas');
-            const ctx = canvas.getContext('2d');
-            let isDrawing = false;
-            let currentColor = '#ff0000';
-            let brushSize = 3;
-            
-
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            function showNotification(title, message, type) {
-                const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-                const notification = $(`<div class="alert ${alertClass}" role="alert">
-                    <strong>${title}:</strong> ${message}
-                    <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>`);
-
-                // Add to page
-                $('body').append(notification);
-
-                // Auto-remove after 3 seconds
-                setTimeout(function () {
-                    notification.alert('close');
-                }, 3000);
-            }
-
-            // Drawing functions
-            function startDrawing(e) {
-                isDrawing = true;
-                draw(e);
-            }
-
-            function stopDrawing() {
-                isDrawing = false;
-                ctx.beginPath();
-            }
-
-            function draw(e) {
-                if (!isDrawing) return;
-
-                ctx.lineWidth = brushSize;
-                ctx.lineCap = 'round';
-                ctx.strokeStyle = currentColor;
-
-                // Get position accounting for canvas position and scaling
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
-
-                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-
-                if (clientX && clientY) {
-                    const x = (clientX - rect.left) * scaleX;
-                    const y = (clientY - rect.top) * scaleY;
-
-                    ctx.lineTo(x, y);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(x, y);
-                }
-            }
-
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
-
-            canvas.addEventListener('touchstart', function (e) {
-                e.preventDefault();
-                startDrawing(e);
-            });
-            canvas.addEventListener('touchmove', function (e) {
-                e.preventDefault();
-                draw(e);
-            });
-            canvas.addEventListener('touchend', stopDrawing);
-
-            $('.color-swatch').click(function () {
-                $('.color-swatch').removeClass('active');
-                $(this).addClass('active');
-                currentColor = $(this).data('color');
-            });
-
-            // Brush size
-            $('#brush-size').on('input', function () {
-                brushSize = $(this).val();
-                $('#brush-size-value').text(brushSize + 'px');
-            });
-
-            // Clear canvas
-            $('#clear-canvas').click(function () {
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            });
-
-            // Send to matrix
-            $('#send-to-matrix').click(function () {
-                const button = $(this);
-                const originalText = button.text();
-                button.prop('disabled', true).text('Sending...');
-
-                try {
-                    const imageData = canvas.toDataURL('image/png');
-
-                    $.ajax({
-                        url: '/send-drawing',
-                        type: 'POST',
-                        data: {
-                            image_data: imageData
-                        },
-                        success: function (response) {
-                            showNotification('Success', 'Drawing sent to matrix!', 'success');
-                            button.text(originalText).prop('disabled', false);
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error sending drawing:", error);
-                            console.error("Response:", xhr.responseText);
-
-                            let errorMessage = 'Error sending drawing to matrix.';
-                            try {
-                                const response = JSON.parse(xhr.responseText);
-                                if (response && response.message) {
-                                    errorMessage = response.message;
-                                }
-                            } catch (e) { }
-
-                            showNotification('Error', errorMessage, 'error');
-                            button.text(originalText).prop('disabled', false);
-                        }
-                    });
-                } catch (e) {
-                    console.error("Exception in send-to-matrix:", e);
-                    showNotification('Error', 'Could not process drawing image: ' + e.message, 'error');
-                    button.text(originalText).prop('disabled', false);
-                }
-            });
-
-            // Stop button
-            $('#stop-button').click(function () {
-                const button = $(this);
-                button.prop('disabled', true);
-
-                $.ajax({
-                    url: '/off',
-                    type: 'POST',
-                    success: function (response) {
-                        $('.status-indicator').removeClass('status-on').addClass('status-off');
-                        $('#current-mode').text('Off');
-                        showNotification('Success', 'LED matrix turned off', 'success');
-                        button.prop('disabled', false);
-                    },
-                    error: function () {
-                        showNotification('Error', 'Failed to turn off LED matrix', 'error');
-                        button.prop('disabled', false);
-                    }
-                });
-            });
-
-            setInterval(function () {
-                $.ajax({
-                    url: '/system-info',
-                    type: 'GET',
-                    success: function (response) {
-                        $('#storage-info').text(response.storage);
-                        $('#uptime-info').text(response.uptime);
-                    }
-                });
-            }, 30000);
-
-            $('#mode-form').submit(function (e) {
-                e.preventDefault();
-
-                const selectedMode = $('#mode-select').val();
-
-                $.ajax({
-                    url: '/on',
-                    type: 'POST',
-                    data: {
-                        comp_select: selectedMode
-                    },
-                    success: function (response) {
-                        // Update UI to show the mode is active
-                        $('.status-indicator').removeClass('status-off').addClass('status-on');
-                        $('#current-mode').text(selectedMode);
-
-                        // If snake mode, show the modal
-                        if (selectedMode === 'snake') {
-                            setTimeout(function () {
-                                const snakeModal = new bootstrap.Modal(document.getElementById('snakeControlsModal'));
-                                snakeModal.show();
-                                startSnakeStatusUpdates();
-                            }, 500);
-                        } else if (selectedMode === "webcam") {
-                            setTimeout(function () {
-                                const modal = new bootstrap.Modal(document.getElementById('webcamModal'));
-                                modal.show();
-                                startWebcamStream();
-                            }, 500);
-                        }
-
-                        showNotification('Success', 'Mode started successfully', 'success');
-                    },
-                    error: function (xhr, status, error) {
-                        showNotification('Error', 'Failed to start mode', 'error');
-                    }
-                });
-            });
-        });
-    </script>
+  <script>
+    window.LED = { modes: {{ modes|tojson }}, state: {{ state|tojson }} };
+  </script>
+  <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v={{ version }}"></script>
 </body>
-
 </html>
