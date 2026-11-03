@@ -4,7 +4,7 @@ A Raspberry Pi driving a 192×64 LED matrix (6×2 panels of 64×32), with a web 
 
 ## Deploying to the Pi (automatic, from GitHub)
 
-The Pi runs the dashboard as a service and follows the `main` branch: every minute it checks GitHub, and when `main` has a new commit it pulls it and restarts the dashboard. So the workflow is: work on a branch → open a pull request → merge into `main` → the Pi is updated within a minute.
+The Pi runs the dashboard as a service and follows the `main` branch: every 20 seconds it asks GitHub for the latest commit ID of `main` (a few hundred bytes), and only when that changed it downloads the new code and restarts the dashboard. So the workflow is: work on a branch → open a pull request → merge into `main` → the Pi is updated within about 20 seconds.
 
 **One-time setup on the Pi**
 
@@ -27,9 +27,10 @@ Options for the installer: `LEDMATRIX_BRANCH=main` (branch to follow) and `LEDMA
 | Dashboard status | `systemctl status ledmatrix` |
 | Dashboard output / errors | `journalctl -u ledmatrix -f` |
 | What the updater did | `journalctl -u ledmatrix-update` |
-| Update right now | `sudo systemctl start ledmatrix-update` |
+| Check for an update right now | `sudo systemctl restart ledmatrix-update` |
 | Restart | `sudo systemctl restart ledmatrix` |
-| Stop auto-updates | `sudo systemctl disable --now ledmatrix-update.timer` |
+| Stop auto-updates | `sudo systemctl disable --now ledmatrix-update` |
+| Check less/more often | edit `LEDMATRIX_INTERVAL` in `deploy/ledmatrix-update.service` |
 
 The Pi always mirrors the branch exactly: edits made directly on the Pi are overwritten by the next update, so make changes through GitHub. Settings, uploads and certificates live outside the repo (`/root/ledmatrix`) and are kept.
 

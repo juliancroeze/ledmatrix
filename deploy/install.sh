@@ -4,8 +4,9 @@
 #
 # - installs the Python packages
 # - runs the dashboard as a service that starts on boot (ledmatrix.service)
-# - checks GitHub every minute and deploys new commits on the branch
-#   (ledmatrix-update.timer)
+# - keeps the Pi on the latest commit of the branch: every 20 seconds it asks
+#   GitHub for the latest commit ID and only downloads when it changed
+#   (ledmatrix-update.service)
 #
 # Options (environment variables):
 #   LEDMATRIX_BRANCH=main     branch the Pi follows
@@ -50,7 +51,11 @@ echo "== systemd services"
 render() { sed -e "s|@REPO@|$REPO|g" -e "s|@ARGS@|$ARGS|g" -e "s|@BRANCH@|$BRANCH|g" "$1"; }
 render "$REPO/deploy/ledmatrix.service"        > /etc/systemd/system/ledmatrix.service
 render "$REPO/deploy/ledmatrix-update.service" > /etc/systemd/system/ledmatrix-update.service
-render "$REPO/deploy/ledmatrix-update.timer"   > /etc/systemd/system/ledmatrix-update.timer
+# Older versions used a timer; replace it with the watching service.
+if [ -f /etc/systemd/system/ledmatrix-update.timer ]; then
+    systemctl disable --now ledmatrix-update.timer 2>/dev/null || true
+    rm -f /etc/systemd/system/ledmatrix-update.timer
+fi
 systemctl daemon-reload
 
 if [ "$FROM_UPDATE" != "--from-update" ]; then
@@ -58,8 +63,8 @@ if [ "$FROM_UPDATE" != "--from-update" ]; then
     pkill -f "python3 index.py" 2>/dev/null || true
     sleep 1
     systemctl enable --now ledmatrix.service
-    systemctl enable --now ledmatrix-update.timer
-    systemctl restart ledmatrix.service
+    systemctl enable ledmatrix-update.service
+    systemctl restart ledmatrix.service ledmatrix-update.service
     echo
     echo "Done. The dashboard runs as a service and follows the '$BRANCH' branch on GitHub."
     echo "  Status:        systemctl status ledmatrix"

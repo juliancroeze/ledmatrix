@@ -1,9 +1,15 @@
 [Unit]
-Description=Update the LED matrix dashboard from GitHub (@BRANCH@)
+Description=Keep the LED matrix dashboard up to date with GitHub (@BRANCH@)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=oneshot
+Type=simple
 Environment=LEDMATRIX_BRANCH=@BRANCH@
-ExecStart=/bin/bash @REPO@/deploy/update.sh
+Environment=LEDMATRIX_INTERVAL=20
+ExecStart=/bin/bash @REPO@/deploy/update.sh --watch
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
