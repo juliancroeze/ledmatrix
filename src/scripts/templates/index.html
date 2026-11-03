@@ -198,6 +198,17 @@
             </div>
           </section>
 
+          <section class="panel" data-panel="clock" hidden>
+            <header class="panel-head"><h2>Clock</h2><p>Choose how the time is drawn.</p></header>
+            <label class="field">
+              <select id="clock-style" aria-label="Clock style">
+                {% for value, name in [('default', 'Default'), ('mario', 'Mario'), ('tetris', 'Tetris')] %}
+                <option value="{{ value }}"{% if state.clock_style == value %} selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </section>
+
           <section class="panel" data-panel="weather" hidden>
             <header class="panel-head"><h2>Weather</h2><p>Current conditions from Open-Meteo.</p></header>
             <form class="row" id="weather-form">

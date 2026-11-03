@@ -37,7 +37,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.expanduser('~/ledmatrix')
 UPLOAD_DIR = os.path.join(DATA_DIR, 'uploads')
 CONFIG_PATH = os.path.join(DATA_DIR, 'config.json')
-APP_VERSION = '2.0.4'
+APP_VERSION = '2.0.5'
 
 # ---------------------------------------------------------------------------
 # Mode registry. `group` decides where the tile shows up on the dashboard,
@@ -66,7 +66,7 @@ MODES = [
                        hint='Arrows move, Z/space jump, hold X to run (and throw fire). '
                             'Down: ground pound in the air, enter a pipe. Up: climb a vine.')),
     # ambient
-    dict(id='clock', label='Clock', icon='clock', group='ambient', cls=Clock, resume=True),
+    dict(id='clock', label='Clock', icon='clock', group='ambient', cls=Clock, panel='clock', resume=True),
     dict(id='weather', label='Weather', icon='cloud-sun', group='ambient', cls=WeatherApp, panel='weather', resume=True),
     dict(id='bitcoin', label='Bitcoin', icon='bitcoin', group='ambient', cls=BTCDisplay, resume=True),
     dict(id='rain', label='Rain', icon='binary', group='ambient', cls=MatrixRain, resume=True),
@@ -245,6 +245,7 @@ class Matrix(object):
             'game': game,
             'options': self.mode_options if self.toggled else {},
             'weather_city': self.config.get('weather_city', 'Amsterdam'),
+            'clock_style': self.config.get('clock_style', 'default'),
         }
 
 
@@ -311,6 +312,12 @@ def api_mode():
         city = (options.get('city') or matrix.config.get('weather_city') or 'Amsterdam').strip()[:60]
         matrix.config['weather_city'] = city
         options = {'city': city}
+    if mode_id == 'clock':
+        style = options.get('style') or matrix.config.get('clock_style') or 'default'
+        if style not in Clock.STYLES:
+            style = 'default'
+        matrix.config['clock_style'] = style
+        options = {'style': style}
     if mode_id == 'image' and not options.get('path'):
         current = current_upload()
         if not current:

@@ -8,14 +8,24 @@ class Clock(FrameMode):
     """Big clock with the date underneath and a slowly cycling colour."""
 
     FPS = 20
+    STYLES = ('default', 'mario', 'tetris')
 
     def setup(self):
+        self.style = self.options.get('style') if self.options.get('style') in self.STYLES else 'default'
+        self.face = None
+        if self.style != 'default':
+            from mods.clock_styles import STYLES
+            self.face = STYLES[self.style]()
+            self.FPS = 40
         self.hue = 0.0
         self.big = get_font('texgyre-27')
         self.mid = get_font('10x20')
         self.small = get_font('6x10')
 
     def render(self, dt):
+        if self.face is not None:
+            self.face.render(self, dt)
+            return
         self.hue = (self.hue + dt * 0.03) % 1.0
         color = tuple(int(c * 255) for c in colorsys.hsv_to_rgb(self.hue, 0.85, 1))
         dim = tuple(c // 3 for c in color)

@@ -194,11 +194,14 @@ input[type="range"] { accent-color: var(--accent); }
 .range-inline { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
 .range-inline input { width: 110px; }
 
-input[type="text"], textarea {
+input[type="text"], textarea, select {
   width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-ctl);
   padding: 11px 13px; outline: none; resize: vertical;
 }
-input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent); }
+select { appearance: none; cursor: pointer; padding-right: 36px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
 textarea { font-size: 16px; }
 
 .color-field { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; cursor: pointer; }

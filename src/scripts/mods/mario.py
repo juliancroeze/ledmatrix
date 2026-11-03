@@ -805,7 +805,7 @@ class SuperMario(FrameMode):
         # knock out enemies standing on the block
         for e in self.objects[self.area_id]['enemies']:
             if e.state == 'walk' and abs(e.y + e.h - y) < 0.2 and e.x < x + 1 and e.x + e.w > x:
-                self.kill(e, 1 if e.cx > x + 0.5 else -1)
+                self.kill_enemy(e, 1 if e.cx > x + 0.5 else -1)
         for it in self.items:
             if abs(it.y + it.h - y) < 0.2 and it.x < x + 1 and it.x + it.w > x:
                 it.vy = -8.0
@@ -819,7 +819,7 @@ class SuperMario(FrameMode):
         self.add_score(50)
         for e in self.objects[self.area_id]['enemies']:
             if e.state == 'walk' and abs(e.y + e.h - y) < 0.2 and e.x < x + 1 and e.x + e.w > x:
-                self.kill(e, 1)
+                self.kill_enemy(e, 1)
 
     def smash(self, x, y):
         t = self.area.get(x, y)
@@ -902,11 +902,11 @@ class SuperMario(FrameMode):
                 ashell = a.kind == 'shell' and abs(a.vx) > 5
                 bshell = b.kind == 'shell' and abs(b.vx) > 5
                 if ashell and not bshell:
-                    self.kill(b, 1 if a.vx > 0 else -1)
+                    self.kill_enemy(b, 1 if a.vx > 0 else -1)
                 elif bshell and not ashell:
-                    self.kill(a, 1 if b.vx > 0 else -1)
+                    self.kill_enemy(a, 1 if b.vx > 0 else -1)
                 elif ashell and bshell:
-                    self.kill(a, -1); self.kill(b, 1)
+                    self.kill_enemy(a, -1); self.kill_enemy(b, 1)
                 else:
                     if a.cx < b.cx:
                         a.vx, b.vx = -abs(a.vx), abs(b.vx)
@@ -917,7 +917,7 @@ class SuperMario(FrameMode):
             if e.state != 'walk' or not m.overlaps(e, 0.05):
                 continue
             if m.star > 0 or m.mega > 0:
-                self.kill(e, m.facing)
+                self.kill_enemy(e, m.facing)
                 continue
             stomp = m.vy > 0 and m.prev_bottom <= e.y + 0.45
             if e.kind == 'shell' and abs(e.vx) < 0.1:
@@ -959,7 +959,7 @@ class SuperMario(FrameMode):
         elif e.kind == 'shell':
             e.vx = 0.0
 
-    def kill(self, e, direction):
+    def kill_enemy(self, e, direction):
         if e.state in ('dead', 'gone'):
             return
         e.state = 'dead'
@@ -1069,7 +1069,7 @@ class SuperMario(FrameMode):
             hit = False
             for e in self.objects[self.area_id]['enemies']:
                 if e.state == 'walk' and e.active and fb.overlaps(e):
-                    self.kill(e, 1 if vx > 0 else -1)
+                    self.kill_enemy(e, 1 if vx > 0 else -1)
                     hit = True
                     break
             if not hit and self.camx - 2 < fb.x < self.camx + VIEW_W + 2:
@@ -1330,7 +1330,7 @@ class SuperMario(FrameMode):
             for x in range(bw):
                 px[x, y] = col
         # keep the backdrop a bit darker than the playfield so it reads on LEDs
-        return img.point(lambda v: int(v * 0.8))
+        return img.point(lambda v: int(v * 0.6))
 
     def make_bg_under(self):
         img = Image.new('RGB', (W, H), (8, 8, 24))

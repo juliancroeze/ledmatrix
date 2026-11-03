@@ -58,6 +58,8 @@
     document.body.classList.toggle('is-on', !!on);
     $('#now-label').textContent = info ? info.label : 'Off';
     $('#now-sub').textContent = subtitle(s, info);
+    const cs = $('#clock-style');
+    if (s.clock_style && cs && document.activeElement !== cs) cs.value = s.clock_style;
     $('#stop-btn').disabled = !on;
     $$('.tile').forEach(t => {
       t.classList.toggle('running', on && t.dataset.mode === s.mode);
@@ -83,6 +85,9 @@
     }
     if (info.id === 'text' && s.options && s.options.text) return '“' + s.options.text.slice(0, 40) + '”';
     if (info.id === 'weather' && s.options && s.options.city) return s.options.city;
+    if (info.id === 'clock' && s.options && s.options.style) {
+      return { default: 'Default clock', mario: 'Mario clock', tetris: 'Tetris clock' }[s.options.style] || 'Running';
+    }
     return 'Running';
   }
 
@@ -538,6 +543,13 @@
       toast(imageFile && imageFile.type === 'image/gif' ? 'GIF is playing' : 'Image is on the matrix');
     } catch (e) { toast(e.message, 'error'); }
     btn.disabled = false;
+  });
+
+  // ------------------------------------------------------------------ clock
+  $('#clock-style').addEventListener('change', async e => {
+    try {
+      await api('/api/mode', { mode: 'clock', options: { style: e.target.value } });
+    } catch (err) { toast(err.message, 'error'); }
   });
 
   // ------------------------------------------------------------------ weather
