@@ -96,9 +96,15 @@ def save_config(cfg):
 
 
 class MatrixProxy(object):
-    """Wraps RGBMatrix so the game controller can show a live preview: while
-    `capture` is on (only during games), every SetImage() call is mirrored
-    into `self.frame`. Everything else is passed straight through."""
+    """Wraps RGBMatrix.
+
+    Double buffering: every SetImage() draws the whole frame into an offscreen
+    canvas and swaps it in on the panel's next refresh (SwapOnVSync), so the
+    matrix never shows half of one frame and half of the next (tearing).
+
+    It also keeps the last frame in `self.frame` (with a counter in
+    `frame_id`) so the game controller can show a live preview while
+    `capture` is on. Everything else is passed straight through."""
 
     def __init__(self, matrix, width=192, height=64):
         object.__setattr__(self, '_m', matrix)
@@ -106,23 +112,41 @@ class MatrixProxy(object):
         object.__setattr__(self, 'frame_id', 0)
         object.__setattr__(self, 'capture', False)
         object.__setattr__(self, '_lock', threading.Lock())
+        try:
+            canvas = matrix.CreateFrameCanvas()
+        except Exception as e:
+            print(f"No offscreen canvas, drawing directly: {e}")
+            canvas = None
+        object.__setattr__(self, '_canvas', canvas)
+
+    def _show(self, frame, unsafe=True):
+        if self._canvas is None:
+            self._m.SetImage(frame, 0, 0, unsafe)
+        else:
+            self._canvas.SetImage(frame, 0, 0, unsafe)
+            object.__setattr__(self, '_canvas', self._m.SwapOnVSync(self._canvas))
 
     def SetImage(self, image, offset_x=0, offset_y=0, unsafe=True):
-        self._m.SetImage(image, offset_x, offset_y, unsafe)
-        if self.capture:
-            with self._lock:
-                if offset_x == 0 and offset_y == 0 and image.size == self.frame.size and image.mode == 'RGB':
-                    object.__setattr__(self, 'frame', image.copy())
-                else:
-                    frame = self.frame.copy()
-                    frame.paste(image.convert('RGB'), (offset_x, offset_y))
-                    object.__setattr__(self, 'frame', frame)
-                object.__setattr__(self, 'frame_id', self.frame_id + 1)
+        with self._lock:
+            if offset_x == 0 and offset_y == 0 and image.size == self.frame.size:
+                frame = image.convert('RGB') if image.mode != 'RGB' else image.copy()
+            else:
+                # partial update: paste onto the last full frame, then show it whole
+                frame = self.frame.copy()
+                frame.paste(image.convert('RGB'), (offset_x, offset_y))
+            self._show(frame, unsafe)
+            object.__setattr__(self, 'frame', frame)
+            object.__setattr__(self, 'frame_id', self.frame_id + 1)
 
     def Clear(self):
-        self._m.Clear()
         with self._lock:
-            object.__setattr__(self, 'frame', Image.new('RGB', self.frame.size))
+            frame = Image.new('RGB', self.frame.size)
+            if self._canvas is None:
+                self._m.Clear()
+            else:
+                self._canvas.Clear()
+                object.__setattr__(self, '_canvas', self._m.SwapOnVSync(self._canvas))
+            object.__setattr__(self, 'frame', frame)
             object.__setattr__(self, 'frame_id', self.frame_id + 1)
 
     def __getattr__(self, name):

@@ -434,15 +434,14 @@ class SuperMario(FrameMode):
 
     # -- main loop -------------------------------------------------------------
     def render(self, dt):
-        self.acc = getattr(self, 'acc', 0.0) + dt
-        steps = 0
-        while self.acc >= STEP and steps < 5:
-            self.acc -= STEP
-            steps += 1
-            self.tick(STEP)
+        # Advance by exactly the time that passed since the last frame (in
+        # sub-steps of at most 1/60 s), so motion stays even when frames
+        # don't arrive at a perfectly steady rate.
+        dt = min(dt, 4 * STEP)
+        n = max(1, int(math.ceil(dt / STEP - 1e-6)))
+        for i in range(n):
+            self.tick(dt / n)
             self.pressed.clear()
-        if steps >= 5:
-            self.acc = 0.0
         self.draw_frame()
 
     def tick(self, dt):
@@ -1104,9 +1103,10 @@ class SuperMario(FrameMode):
         if a.w <= VIEW_W:
             self.camx = -(VIEW_W - a.w) / 2.0
         else:
-            target = m.cx - VIEW_W * 0.42
-            self.camx += (target - self.camx) * min(1.0, dt * 8.0)
-            self.camx = max(0.0, min(a.w - VIEW_W, self.camx))
+            # follow Mario 1:1, snapped to whole LEDs so he never wobbles
+            px = int(round(m.cx * T)) - int(W * 0.42)
+            px = max(0, min((a.w - VIEW_W) * T, px))
+            self.camx = px / float(T)
         if a.h <= VIEW_H:
             self.camy = 0.0
             return
@@ -1115,6 +1115,8 @@ class SuperMario(FrameMode):
         if m.on_ground or m.climb:
             target = max(0.0, min(maxy, bottom - 14))
             self.camy += (target - self.camy) * min(1.0, dt * 4.0)
+            if abs(target - self.camy) < 0.25 / T:
+                self.camy = target
         if m.y < self.camy + 2:
             self.camy = m.y - 2
         if bottom > self.camy + VIEW_H - 1:
