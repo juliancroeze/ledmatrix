@@ -31,12 +31,13 @@ from mods.pong import Pong
 from mods.life import GameOfLife
 from mods.rain import MatrixRain
 from mods.starfield import Starfield
+from mods.mario import SuperMario
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.expanduser('~/ledmatrix')
 UPLOAD_DIR = os.path.join(DATA_DIR, 'uploads')
 CONFIG_PATH = os.path.join(DATA_DIR, 'config.json')
-APP_VERSION = '2.0.3'
+APP_VERSION = '2.0.4'
 
 # ---------------------------------------------------------------------------
 # Mode registry. `group` decides where the tile shows up on the dashboard,
@@ -60,6 +61,10 @@ MODES = [
          controls=dict(dpad=False, a='Restart', slider=True, players=True, hint='Drag the bar, or use the up/down keys')),
     dict(id='flappybird', label='Flappy', icon='bird', group='games', cls=FlappyBird, panel='gamepad',
          controls=dict(dpad=False, a='Flap', big=True, hint='Space or tap to flap')),
+    dict(id='mario', label='Mario 1-1', icon='play', group='games', cls=SuperMario, panel='gamepad',
+         controls=dict(dpad=True, a='Jump', b='Run', space='A',
+                       hint='Arrows move, Z/space jump, hold X to run (and throw fire). '
+                            'Down: ground pound in the air, enter a pipe. Up: climb a vine.')),
     # ambient
     dict(id='clock', label='Clock', icon='clock', group='ambient', cls=Clock, resume=True),
     dict(id='weather', label='Weather', icon='cloud-sun', group='ambient', cls=WeatherApp, panel='weather', resume=True),
