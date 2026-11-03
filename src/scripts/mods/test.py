@@ -1,42 +1,23 @@
 #!/usr/bin/env python
-from mods.samplebase import SampleBase
+import colorsys
+from mods.samplebase import FrameMode
 
 
-class PulsingColors(SampleBase):
-    def __init__(self, *args, **kwargs):
-        super(PulsingColors, self).__init__(*args, **kwargs)
+class PulsingColors(FrameMode):
+    """Rainbow wave sweeping across the panel (the old 'test' mode)."""
 
-    def run(self):
-        self.offscreen_canvas = self.matrix.CreateFrameCanvas()
-        continuum = 0
+    FPS = 30
 
-        while self.running:
-            self.usleep(5 * 1000)
-            continuum += 1
-            continuum %= 3 * 255
+    def setup(self):
+        self.t = 0.0
+        from PIL import Image
+        # one column of colours per hue step, rebuilt each frame is cheap at 192 wide
+        self.strip = Image.new('RGB', (192, 1))
 
-            red = 0
-            green = 0
-            blue = 0
-
-            if continuum <= 255:
-                c = continuum
-                blue = 255 - c
-                red = c
-            elif continuum > 255 and continuum <= 511:
-                c = continuum - 256
-                red = 255 - c
-                green = c
-            else:
-                c = continuum - 512
-                green = 255 - c
-                blue = c
-
-            self.offscreen_canvas.Fill(red, green, blue)
-            self.offscreen_canvas = self.matrix.SwapOnVSync(self.offscreen_canvas)
-
-# Main function
-if __name__ == "__main__":
-    pulsing_colors = PulsingColors()
-    if (not pulsing_colors.process()):
-        pulsing_colors.print_help()
+    def render(self, dt):
+        self.t += dt * 0.15
+        px = self.strip.load()
+        for x in range(192):
+            r, g, b = colorsys.hsv_to_rgb((self.t + x / 384.0) % 1.0, 1, 1)
+            px[x, 0] = (int(r * 255), int(g * 255), int(b * 255))
+        self.image.paste(self.strip.resize((192, 64)))

@@ -1,62 +1,42 @@
-from threading import Thread
-from rgbmatrix import graphics
-from mods.samplebase import SampleBase
-import threading
+import colorsys
 import datetime
+from mods.samplebase import FrameMode
+from mods.fonts import get_font, text_size
 
-class Clock(SampleBase):
-    def __init__(self, matrix):
-        Thread.__init__(self)
-        self.matrix = matrix
-        self.lock = threading.Lock()
 
-    def get_width(self, text):
-        return len(text)*10
+class Clock(FrameMode):
+    """Big clock with the date underneath and a slowly cycling colour."""
 
-    def run(self):
-        super(Clock, self).run()
+    FPS = 20
 
-        continuum = 0
+    def setup(self):
+        self.hue = 0.0
+        self.big = get_font('texgyre-27')
+        self.mid = get_font('10x20')
+        self.small = get_font('6x10')
 
-        canvas = self.matrix.CreateFrameCanvas()
-        font = graphics.Font()
-        font.LoadFont("../../fonts/10x20.bdf")
+    def render(self, dt):
+        self.hue = (self.hue + dt * 0.03) % 1.0
+        color = tuple(int(c * 255) for c in colorsys.hsv_to_rgb(self.hue, 0.85, 1))
+        dim = tuple(c // 3 for c in color)
+        now = datetime.datetime.now()
+        d = self.draw
+        d.rectangle((0, 0, 191, 63), fill=(0, 0, 0))
 
-        while self.running:
-            now = datetime.datetime.now()
-            date_string = now.strftime('%Y-%m-%d')
-            time = now.strftime("%H : %M : %S")
+        hm = now.strftime('%H:%M')
+        sec = now.strftime('%S')
+        w_hm, _ = text_size(d, hm, self.big)
+        w_s, _ = text_size(d, sec, self.mid)
+        total = w_hm + 4 + w_s
+        x = (192 - total) // 2
+        d.text((x, 6), hm, font=self.big, fill=color)
+        d.text((x + w_hm + 4, 17), sec, font=self.mid, fill=dim)
 
-            continuum += 1
-            continuum %= 3 * 255
+        date = now.strftime('%A %d %B')
+        w, _ = text_size(d, date, self.small)
+        d.text(((192 - w) // 2, 46), date, font=self.small, fill=(150, 150, 170))
 
-            red = 0
-            green = 0
-            blue = 0
-
-            if continuum <= 255:
-                c = continuum
-                blue = 255 - c
-                red = c
-            elif continuum > 255 and continuum <= 511:
-                c = continuum - 256
-                red = 255 - c
-                green = c
-            else:
-                c = continuum - 512
-                green = 255 - c
-                blue = c
-
-            canvas.Clear()
-            graphics.DrawText(canvas, font, self.matrix.width/2 - (len(date_string)*10)/2, 25, graphics.Color(red, green, blue), date_string)
-            graphics.DrawText(canvas, font, self.matrix.width/2 - (len(time)*10)/2, 50, graphics.Color(red, green, blue), time)
-
-            graphics.DrawLine(canvas, 0, 0, 192, 0, graphics.Color(red, green, blue))
-            graphics.DrawLine(canvas, 191, 0, 191, 63, graphics.Color(red, green, blue))
-            graphics.DrawLine(canvas, 191, 63, 0, 63, graphics.Color(red, green, blue))
-            graphics.DrawLine(canvas, 0, 0, 0, 63, graphics.Color(red, green, blue))
-            canvas = self.matrix.SwapOnVSync(canvas)
-        return True
-        
-        
-
+        # seconds progress bar along the bottom edge
+        frac = (now.second + now.microsecond / 1e6) / 60.0
+        d.line((0, 63, 191, 63), fill=(20, 20, 30))
+        d.line((0, 63, int(191 * frac), 63), fill=color)

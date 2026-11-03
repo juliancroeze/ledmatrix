@@ -1,65 +1,47 @@
-from mods.samplebase import SampleBase
-from threading import Thread
-from random import randint
-import threading
-from PIL import Image, ImageOps 
-import time
+import os
+import random
+from PIL import Image, ImageChops
+from mods.samplebase import FrameMode
 
-class Dvd(SampleBase):
-    def __init__(self, matrix):
-        Thread.__init__(self)
-        self.matrix = matrix
-        self.lock = threading.Lock()
-        self.winw = 192
-        self.winh = 64
-
-        self.width = 0
-        self.height = 0
-
-        self.addx = 1
-        self.addy = 1
-
-        self.oldColor = (255, 255, 255)
-
-    def run(self):
-        logo1 = Image.open("mods/images/ronalddvd.bmp").convert("RGB")
-        # logo1 = ImageOps.colorize(logo1, white="blue", black="black")
-        # logo1 = logo1.convert("RGB")
-
-        self.height = logo1.height
-        self.width = logo1.width
-
-        posx = randint(0, self.winw - self.width - 2)
-        posy = randint(0, self.winh - self.height - 2)
-
-        def changeColor(img):
-            pixels = img.load()
-            for i in range(img.size[0]):
-                for j in range(logo1.size[1]):
-                    if pixels[i, j] == self.oldColor:
-                        c = (0, randint(0, 255), 0)
-                        pixels[i, j] = c
-                        self.oldColor = c
-                    
+HERE = os.path.dirname(__file__)
 
 
-        while self.running:
-            posx += self.addx
-            posy += self.addy
+class Dvd(FrameMode):
+    """Bouncing logo that changes colour on every wall hit."""
 
-            horizontal_hit = posx <= 0 or posx >= self.winw - self.width - 1
-            vertical_hit = posy <= 0 or posy >= self.winh - self.height - 1
-            
-            if horizontal_hit:
-                changeColor(logo1)
-                self.addx *= -1
-            if vertical_hit:
-                
-                changeColor(logo1)
-                self.addy *= -1
+    FPS = 30
 
-            self.matrix.SetImage(logo1, posx, posy)
-            time.sleep(0.05)
-            self.matrix.Clear()
+    def setup(self):
+        self.logo = Image.open(os.path.join(HERE, 'images', 'ronalddvd.bmp')).convert('RGB')
+        self.w, self.h = self.logo.size
+        self.x = float(random.randint(0, 192 - self.w - 1))
+        self.y = float(random.randint(0, 64 - self.h - 1))
+        self.vx, self.vy = 24.0, 18.0
+        self.flash = 0.0
+        self.tint()
 
+    def tint(self):
+        hue_colors = [(255, 80, 80), (80, 255, 120), (80, 160, 255), (255, 220, 60), (255, 90, 255), (60, 255, 255)]
+        color = random.choice(hue_colors)
+        self.tinted = ImageChops.multiply(self.logo, Image.new('RGB', self.logo.size, color))
 
+    def render(self, dt):
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        hit_x = hit_y = False
+        if self.x <= 0 or self.x >= 192 - self.w:
+            self.vx *= -1
+            self.x = max(0, min(192 - self.w, self.x))
+            hit_x = True
+        if self.y <= 0 or self.y >= 64 - self.h:
+            self.vy *= -1
+            self.y = max(0, min(64 - self.h, self.y))
+            hit_y = True
+        if hit_x or hit_y:
+            self.tint()
+        if hit_x and hit_y:
+            self.flash = 1.0   # the legendary corner hit
+        self.flash = max(0.0, self.flash - dt)
+        v = int(self.flash * 120)
+        self.draw.rectangle((0, 0, 192, 64), fill=(v, v, v))
+        self.image.paste(self.tinted, (int(self.x), int(self.y)))
