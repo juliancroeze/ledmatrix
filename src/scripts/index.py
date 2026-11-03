@@ -17,9 +17,7 @@ from flask_socketio import SocketIO, emit
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
 from mods.clock import Clock
-from mods.gifviewer import Gif
 from mods.dvd import Dvd
-from mods.test import PulsingColors
 from mods.drawing import Drawing
 from mods.snake import Snake
 from mods.stream import Webcam, ScreenShare, VideoStream
@@ -69,9 +67,7 @@ MODES = [
     dict(id='rain', label='Rain', icon='binary', group='ambient', cls=MatrixRain, resume=True),
     dict(id='stars', label='Stars', icon='sparkles', group='ambient', cls=Starfield, resume=True),
     dict(id='life', label='Life', icon='sprout', group='ambient', cls=GameOfLife, resume=True),
-    dict(id='test', label='Rainbow', icon='rainbow', group='ambient', cls=PulsingColors, resume=True),
     dict(id='dvd', label='DVD', icon='disc-3', group='ambient', cls=Dvd, resume=True),
-    dict(id='gif', label='Nyan', icon='film', group='ambient', cls=Gif, resume=True),
 ]
 MODES_BY_ID = {m['id']: m for m in MODES}
 MODES_BY_CLASS = {m['cls']: m['id'] for m in MODES}

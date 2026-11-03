@@ -48,9 +48,7 @@ tests = [
     ('mods.rain', 'MatrixRain', {}),
     ('mods.starfield', 'Starfield', {}),
     ('mods.life', 'GameOfLife', {}),
-    ('mods.test', 'PulsingColors', {}),
     ('mods.dvd', 'Dvd', {}),
-    ('mods.imageviewer', 'Gif', {}),
     ('mods.stream', 'Webcam', {}),
 ]
 

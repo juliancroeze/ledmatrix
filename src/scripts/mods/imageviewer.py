@@ -1,4 +1,3 @@
-import os
 import time
 from PIL import Image, ImageSequence, ImageOps
 from mods.samplebase import SampleBase
@@ -58,11 +57,3 @@ class ImageViewer(SampleBase):
                     break
                 self.matrix.SetImage(frame)
                 time.sleep(duration)
-
-
-class Gif(ImageViewer):
-    """The original 'gif' mode: plays the bundled nyan cat."""
-
-    def __init__(self, matrix, **options):
-        path = os.path.join(os.path.dirname(__file__), 'gifs', 'nyanresized.gif')
-        super(Gif, self).__init__(matrix, path=path, fit='cover')
