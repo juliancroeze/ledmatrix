@@ -22,7 +22,7 @@
   <div class="app">
 
     <main class="layout">
-      <section class="stage" aria-label="Matrix">
+      <section class="home">
         <div class="now">
           <div class="now-info">
             <span class="status-dot" id="status-dot"></span>
@@ -43,7 +43,38 @@
           </div>
         </div>
 
-        <!-- Context panels: only the one matching the selected mode is shown -->
+        <nav class="library" aria-label="Modes">
+          {% for group, title in [('live', 'Send from this device'), ('games', 'Games'), ('ambient', 'Ambient')] %}
+          <section class="group">
+            <h2 class="group-title">{{ title }}</h2>
+            <div class="tiles">
+              {% for m in modes if m.group == group %}
+              <button class="tile" data-mode="{{ m.id }}" aria-pressed="false">
+                <svg class="icon"><use href="#i-{{ m.icon }}"/></svg>
+                <span>{{ m.label }}</span>
+              </button>
+              {% endfor %}
+            </div>
+          </section>
+          {% endfor %}
+
+        </nav>
+
+        <footer class="sysline" id="sys" title="{{ system.model }} · {{ system.storage }}">
+          <span data-sys="ip">{{ system.ip }}</span>
+          <span>CPU <span data-sys="cpu">{{ system.cpu|round|int }}%</span></span>
+          <span>RAM <span data-sys="memory">{{ system.memory|round|int }}%</span></span>
+          <span data-sys="temp">{{ system.temp ~ ' °C' if system.temp is not none else '' }}</span>
+          <span>up <span data-sys="uptime">{{ system.uptime }}</span></span>
+        </footer>
+      </section>
+
+      <!-- Controls for the selected mode: a column on wide screens, a bottom sheet on phones -->
+      <section class="sheet" id="sheet" aria-label="Mode controls">
+        <div class="sheet-grip">
+          <span class="sheet-handle" aria-hidden="true"></span>
+          <button class="btn btn-ghost btn-icon" id="sheet-close" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
         <div class="panels" id="panels">
 
           <section class="panel" data-panel="webcam" hidden>
@@ -182,38 +213,11 @@
               <button class="btn btn-primary" id="open-controller"><svg class="icon"><use href="#i-gamepad-2"/></svg>Open controller</button>
             </div>
           </section>
+          <p class="sheet-empty" id="sheet-empty">Pick Camera, Screen, Draw, Text, Image, Weather or a game to see its controls here.</p>
         </div>
       </section>
-
-      <aside class="library" aria-label="Modes">
-        {% for group, title in [('live', 'Send from this device'), ('games', 'Games'), ('ambient', 'Ambient')] %}
-        <section class="group">
-          <h2 class="group-title">{{ title }}</h2>
-          <div class="tiles">
-            {% for m in modes if m.group == group %}
-            <button class="tile" data-mode="{{ m.id }}" aria-pressed="false">
-              <svg class="icon"><use href="#i-{{ m.icon }}"/></svg>
-              <span>{{ m.label }}</span>
-            </button>
-            {% endfor %}
-          </div>
-        </section>
-        {% endfor %}
-
-        <section class="group system">
-          <h2 class="group-title">Raspberry Pi</h2>
-          <dl class="sys" id="sys">
-            <div><dt>Model</dt><dd data-sys="model">{{ system.model }}</dd></div>
-            <div><dt>Address</dt><dd data-sys="ip">{{ system.ip }}</dd></div>
-            <div><dt>Uptime</dt><dd data-sys="uptime">{{ system.uptime }}</dd></div>
-            <div><dt>Temperature</dt><dd data-sys="temp">{{ system.temp ~ ' °C' if system.temp is not none else '–' }}</dd></div>
-            <div class="meter"><dt>CPU</dt><dd><span class="bar"><i data-bar="cpu" style="width: {{ system.cpu }}%"></i></span><span data-sys="cpu">{{ system.cpu|round|int }}%</span></dd></div>
-            <div class="meter"><dt>Memory</dt><dd><span class="bar"><i data-bar="memory" style="width: {{ system.memory }}%"></i></span><span data-sys="memory">{{ system.memory|round|int }}%</span></dd></div>
-            <div class="meter"><dt>Storage</dt><dd><span class="bar"><i data-bar="disk" style="width: {{ system.disk }}%"></i></span><span data-sys="storage">{{ system.storage }}</span></dd></div>
-          </dl>
-        </section>
-      </aside>
     </main>
+    <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
   </div>
 
   <!-- Full-screen game controller -->

@@ -36,7 +36,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.expanduser('~/ledmatrix')
 UPLOAD_DIR = os.path.join(DATA_DIR, 'uploads')
 CONFIG_PATH = os.path.join(DATA_DIR, 'config.json')
-APP_VERSION = '2.0.2'
+APP_VERSION = '2.0.3'
 
 # ---------------------------------------------------------------------------
 # Mode registry. `group` decides where the tile shows up on the dashboard,

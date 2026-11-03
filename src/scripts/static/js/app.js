@@ -187,16 +187,31 @@
   });
 
   // ------------------------------------------------------------------ tiles & panels
-  function select(modeId, scroll = true) {
+  // On narrow screens the controls are a bottom sheet that slides over the modes.
+  const narrow = matchMedia('(max-width: 959px)');
+  function openSheet() {
+    if (!narrow.matches) return;
+    document.body.classList.add('sheet-open');
+    $('#sheet-backdrop').hidden = false;
+  }
+  function closeSheet() {
+    document.body.classList.remove('sheet-open');
+    $('#sheet-backdrop').hidden = true;
+  }
+  $('#sheet-close').addEventListener('click', closeSheet);
+  $('#sheet-backdrop').addEventListener('click', closeSheet);
+  narrow.addEventListener && narrow.addEventListener('change', closeSheet);
+
+  function select(modeId, open = true) {
     selected = modeId;
     const info = MODES[modeId];
     const panel = info ? info.panel : null;
     $$('.panel').forEach(p => { p.hidden = p.dataset.panel !== panel; });
     $$('.tile').forEach(t => t.classList.toggle('selected', t.dataset.mode === modeId));
+    $('#sheet-empty').hidden = !!panel;
     if (panel === 'gamepad') updateGameInfo();
-    if (scroll && panel && window.innerWidth < 960) {
-      $('#panels').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    if (open && panel) openSheet();
+    else if (!panel) closeSheet();
   }
 
   $$('.tile').forEach(tile => tile.addEventListener('click', async () => {
@@ -667,6 +682,7 @@
   }
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && pad.open) { closePad(); return; }
+    if (e.key === 'Escape' && document.body.classList.contains('sheet-open')) { closeSheet(); return; }
     const action = keyAction(e);
     if (!action) return;
     e.preventDefault();
