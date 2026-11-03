@@ -1,129 +1,133 @@
-from mods.samplebase import SampleBase
-import threading
-from PIL import Image, ImageDraw
-import time
+import math
 import random
-class FlappyBird(SampleBase):
-    def __init__(self, matrix):
-        print("FlappyBird instance created")
-        threading.Thread.__init__(self)
-        self.matrix = matrix
-        self.lock = threading.Lock()
-        
-        self.WIDTH = 192
-        self.HEIGHT = 64
-        self.GRID_SIZE = 8  
-        self.GRID_WIDTH = self.WIDTH // self.GRID_SIZE
-        self.GRID_HEIGHT = self.HEIGHT // self.GRID_SIZE
-        
-        self.game_over = False
-        self.score = 0
+from mods.samplebase import FrameMode
+from mods.fonts import get_font, text_size
 
-        self.gravity = 20
-        self.velocity = 0
-        self.jump_strength = 15
-
-        self.birdX = 10
-        self.birdY = 2
-
-        self.pipe_width = 20
-        self.pipe_gap = 25
-        self.pipe_speed = 60
-        self.pipes = [self.create_pipe()]
-
-        self.image = Image.new('RGB', (self.WIDTH, self.HEIGHT), color='black')
-        self.draw = ImageDraw.Draw(self.image)
-        
-        self.direction_lock = threading.Lock()
-
-        self.bird = Bird(self.draw, self.GRID_SIZE, self.jump_strength)
-
-        self.last_update_time = time.time()
-
-    def run(self):
-
-        while self.running:
-            if not self.game_over:
-                current_time = time.time()
-                dt = current_time - self.last_update_time
-
-                self.bird.update(self.gravity, dt)
-
-                for pipe in self.pipes:
-                    pipe.update(self.pipe_speed, dt)
-                    if pipe.x + pipe.width <= 0:
-                        self.pipes.remove(pipe)
+W, H = 192, 64
+GRAVITY = 170.0
+FLAP = -62.0
+PIPE_W = 10
+GAP = 24
+SPEED = 42.0
+SPACING = 64
 
 
-
-                if self.pipes[-1].x < self.WIDTH - (self.WIDTH/2):
-                    self.pipes.append(self.create_pipe())
-
-                self.last_update_time = current_time
-
-            self.draw.rectangle((0, 0, self.WIDTH, self.HEIGHT), fill="black")
-
-            for pipe in self.pipes:
-                pipe.draw(self.draw, self.HEIGHT)
-
-            self.bird.draw_bird()
-
-
-
-            self.matrix.SetImage(self.image)
-
-    def create_pipe(self):
-        gap_y = random.randint(10, self.HEIGHT - self.pipe_gap - 10)
-        return Pipe(self.WIDTH, self.pipe_width, gap_y, self.pipe_gap)
-
-class Bird():
-    def __init__(self, draw, GRID_SIZE, jump_strength):
-        self.x = 10
-        self.y = 2
-        self.draw = draw
-        self.GRID_SIZE = GRID_SIZE
-        self.jump_strength = jump_strength
-        self.velocity = 0
-
-    def update(self, gravity, dt):
-        self.velocity += gravity * dt
-        self.y += self.velocity *dt
-
-        #Game Over states
-        if self.y < 0:
-            self.y = 0
-        elif self.y + self.GRID_SIZE > 64:
-            self.y = 64 - self.GRID_SIZE
-
-    def draw_bird(self):
-        y = int(self.y)
-        self.draw.rectangle((self.x, y, self.x + self.GRID_SIZE, y + self.GRID_SIZE), fill="yellow")
+class Bird(object):
+    def __init__(self):
+        self.x = 30
+        self.y = H / 2
+        self.velocity = 0.0
 
     def flap(self):
-        print("Jump")
-        self.velocity = -self.jump_strength
-
-class Pipe():
-    def __init__(self, x, width, gap, gap_size, color="green"):
-        self.x = x
-        self.width = width
-        self.gap = gap
-        self.gap_size = gap_size
-        self.color = color
-
-    def update(self, speed, dt):
-        self.x -= speed * dt
-    
-    def draw(self, draw, screen_height):
-        #Top Pipe
-        draw.rectangle((self.x, 0, self.x + self.width, self.gap), fill=self.color)
-        # Bottom pipe
-        draw.rectangle(
-            (self.x, self.gap + self.gap_size, self.x + self.width, screen_height),
-            fill=self.color
-        )
+        self.velocity = FLAP
 
 
+class FlappyBird(FrameMode):
+    FPS = 60
 
+    def setup(self):
+        self.best = 0
+        self.reset_game()
 
-        
+    def reset_game(self):
+        self.bird = Bird()
+        self.pipes = []
+        self.score = 0
+        self.state = 'ready'   # ready -> playing -> over
+        self.over_timer = 0
+        self.t = 0.0
+        self.ground_x = 0.0
+
+    # Start / flap / restart depending on the game state.
+    def flap(self):
+        with self.lock:
+            if self.state == 'ready':
+                self.state = 'playing'
+                self.bird.flap()
+            elif self.state == 'playing':
+                self.bird.flap()
+            elif self.state == 'over' and self.over_timer <= 0:
+                self.reset_game()
+
+    def handle_input(self, action, pressed=True, **_):
+        if pressed and action in ('A', 'B', 'UP'):
+            self.flap()
+
+    def get_state(self):
+        return {'score': self.score, 'best': self.best, 'game_over': self.state == 'over'}
+
+    def add_pipe(self):
+        gap_y = random.randint(8, H - GAP - 8)
+        self.pipes.append({'x': float(W), 'gap': gap_y, 'scored': False})
+
+    def render(self, dt):
+        self.t += dt
+        b = self.bird
+        if self.state == 'ready':
+            b.y = H / 2 + 3 * math.sin(self.t * 4)
+        elif self.state == 'playing':
+            b.velocity += GRAVITY * dt
+            b.y += b.velocity * dt
+            if not self.pipes or self.pipes[-1]['x'] < W - SPACING:
+                self.add_pipe()
+            for p in self.pipes:
+                p['x'] -= SPEED * dt
+                if not p['scored'] and p['x'] + PIPE_W < b.x:
+                    p['scored'] = True
+                    self.score += 1
+            self.pipes = [p for p in self.pipes if p['x'] + PIPE_W > 0]
+            if self.collides():
+                self.state = 'over'
+                self.over_timer = 0.6
+                self.best = max(self.best, self.score)
+        else:
+            self.over_timer -= dt
+            if b.y < H - 4:
+                b.velocity += GRAVITY * dt
+                b.y = min(H - 4, b.y + b.velocity * dt)
+
+        d = self.draw
+        # sky gradient bands
+        d.rectangle((0, 0, W, H), fill=(4, 6, 24))
+        d.rectangle((0, 40, W, H), fill=(6, 10, 34))
+        for p in self.pipes:
+            x = int(p['x'])
+            g = p['gap']
+            d.rectangle((x, 0, x + PIPE_W, g), fill=(30, 170, 40))
+            d.rectangle((x - 1, g - 3, x + PIPE_W + 1, g), fill=(60, 220, 70))
+            d.rectangle((x, g + GAP, x + PIPE_W, H), fill=(30, 170, 40))
+            d.rectangle((x - 1, g + GAP, x + PIPE_W + 1, g + GAP + 3), fill=(60, 220, 70))
+        # bird: 5x4 body, eye, beak
+        bx, by = int(b.x), int(b.y)
+        d.rectangle((bx, by, bx + 4, by + 3), fill=(255, 210, 0))
+        d.point((bx + 3, by + 1), fill=(0, 0, 0))
+        d.rectangle((bx + 5, by + 2, bx + 6, by + 2), fill=(255, 100, 0))
+        wing = (bx, by + (2 if int(self.t * 10) % 2 else 1))
+        d.point(wing, fill=(255, 255, 200))
+
+        font = get_font('7x13')
+        s = str(self.score)
+        w, _ = text_size(d, s, font)
+        d.text((W // 2 - w // 2, 2), s, font=font, fill=(255, 255, 255))
+        small = get_font('5x7')
+        if self.state == 'ready':
+            msg = 'Press A to flap'
+            w, _ = text_size(d, msg, small)
+            d.text((W // 2 - w // 2, 50), msg, font=small, fill=(180, 180, 220))
+        elif self.state == 'over':
+            big = get_font('10x20')
+            w, _ = text_size(d, 'GAME OVER', big)
+            d.text((W // 2 - w // 2, 20), 'GAME OVER', font=big, fill=(255, 60, 80))
+            msg = f'Best {self.best}  -  A = again'
+            w, _ = text_size(d, msg, small)
+            d.text((W // 2 - w // 2, 44), msg, font=small, fill=(200, 200, 220))
+
+    def collides(self):
+        b = self.bird
+        if b.y < 0 or b.y + 4 > H:
+            return True
+        for p in self.pipes:
+            if p['x'] - 1 < b.x + 5 and p['x'] + PIPE_W + 1 > b.x:
+                if b.y < p['gap'] or b.y + 4 > p['gap'] + GAP:
+                    return True
+        return False
